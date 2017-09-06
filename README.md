@@ -1,6 +1,6 @@
-# Gamma
+# Redshift Gamma
 
-FTC n' stuff.
+## IMPORTANT NOTE:
+We have a submodule dependency on [redshiftrobotics/lib](https://github.com/redshiftrobotics/lib).
+After cloning this repo, you **MUST RUN** `git submodule update --init --recursive`. You also need to run this anytime the upstream repo changes.
 
-## Rick and Morty meme of the week.
-![Meme of the Week](http://i.imgur.com/qVqUQoF.jpg)
