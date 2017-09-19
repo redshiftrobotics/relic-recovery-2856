@@ -35,11 +35,9 @@ public class MechanumChassis {
     }
 
     //based on second post here ftcforum.usfirst.org/forum/ftc-technology/android-studio/6361-mecanum-wheels-drive-code-example
-    void setDirectionVector(Vector2d vector) {
-        float radius;
-        radius = Math.hypot(vector.getXComponent(), vector.getYComponent());
-        // Still confused about that.
-        double robotAngle = Math.atan2(vector.getYComponent(), vector.getXComponent()) - Math.PI / 4;
+    void setDirectionVector(Vector2D vector) {
+        double radius = Math.hypot(vector.GetXComponent(), vector.GetYComponent());
+        double robotAngle = Math.atan2(vector.GetYComponent(), vector.GetXComponent()) - Math.PI / 4;
         speed0 = radius * Math.cos(robotAngle);
         speed1 = radius * Math.sin(robotAngle);
         speed2 = radius * Math.sin(robotAngle);

@@ -54,7 +54,8 @@ public class MechanumTestAuto extends LinearOpMode {
         telemetry.addData("Status", "Initialized");
         waitForStart();
 
-        m.setDirectionVector(/*vector*/);
+        Vector2D testVec = new Vector2D(0, 1);
+        m.setDirectionVector(testVec);
         m.ENGAGE();
         try {
             Thread.sleep(1000);

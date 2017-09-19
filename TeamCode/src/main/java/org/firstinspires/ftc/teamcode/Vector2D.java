@@ -9,7 +9,11 @@ public class Vector2D {
     private double m_nYComponent;
 
 
-    public Vector2D( Vector2D vecVector ) { Vector2D( vecVector.GetXComponent(), vecVector.GetYComponent() ); }
+    public Vector2D( Vector2D vecVector ) { 
+        this.m_nXComponent = vecVector.GetXComponent();
+        this.m_nYComponent = vecVector.GetYComponent();
+    }
+
     public Vector2D( double nXComponent, double nYComponent ) 
     {
         m_nXComponent = nXComponent;
