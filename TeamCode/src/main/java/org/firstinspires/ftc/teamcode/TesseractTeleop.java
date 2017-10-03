@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 
@@ -39,14 +40,43 @@ import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
  */
 @TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
+    double r;
+    double robotAngle;
+    double rightX;
+    double v0;
+    double v1;
+    double v2;
+    double v3;
+
+    private DcMotor m0;
+    private DcMotor m1;
+    private DcMotor m2;
+    private DcMotor m3;
+
     @Override
     public void init() {
         telemetry.addData("Status", "Initialized");
-
+        m0 = hardwareMap.dcMotor.get("m0");
+        m1 = hardwareMap.dcMotor.get("m1");
+        m2 = hardwareMap.dcMotor.get("m2");
+        m3 = hardwareMap.dcMotor.get("m3");
     }
 
     @Override
     public void loop() {
+        Vector2D v = new Vector2D(gamepad1.right_stick_x, gamepad1.right_stick_y);
+        r = Math.hypot(v.GetXComponent(), v.GetYComponent());
+        robotAngle = Math.atan2(v.GetYComponent(), v.GetXComponent()) - Math.PI / 4;
+        rightX = gamepad1.right_stick_x;
+        v0 = r * Math.cos(robotAngle) + rightX;
+        v1 = r * Math.sin(robotAngle) - rightX;
+        v2 = r * Math.sin(robotAngle) + rightX;
+        v3 = r * Math.cos(robotAngle) - rightX;
+
+        m0.setPower(v0);
+        m1.setPower(v1);
+        m2.setPower(v2);
+        m3.setPower(v3);
 
     }
 }
