@@ -11,14 +11,9 @@ import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 @Autonomous(name = "CyrptoAlignTest")
 public class CyrptoBoxAlignTest extends OpMode {
     OpticalDistanceSensor loptical;
-    OpticalDistanceSensor roptical;
-    boolean detectedCryptBox;
-    boolean alignedWithCryptoBox = false;
-    double triggerValue = 0.06;
     @Override
     public void init() {
-        loptical = hardwareMap.opticalDistanceSensor.get("ls");
-        roptical = hardwareMap.opticalDistanceSensor.get("rs");
+        loptical = hardwareMap.opticalDistanceSensor.get("ods");
     }
 
     @Override
@@ -26,14 +21,7 @@ public class CyrptoBoxAlignTest extends OpMode {
         // assumes approach from left for testing purposes
         //alignedWithCryptoBox = (loptical.getLightDetected() < triggerValue && roptical.getLightDetected() < triggerValue);
         // telemetry.addData("hasDetected", detectedCryptBox);
-        if (loptical.getLightDetected() > triggerValue) {
-            alignedWithCryptoBox = true;
-        } else if (loptical.getLightDetected() > 0.5) {
-            alignedWithCryptoBox = false;
-        }
-        telemetry.addData("detected", alignedWithCryptoBox);
-        telemetry.addData("left ods:", loptical.getLightDetected());
-        telemetry.addData("right ods:", roptical.getLightDetected());
+        telemetry.addData("ods:", (loptical.getLightDetected() - .9)*1024);
         telemetry.update();
     }
 }

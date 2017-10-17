@@ -13,6 +13,7 @@ public class PixyTest extends LinearOpMode {
     I2cDevice pixy;
     I2cDeviceSynch pixyReader;
     I2cAddr pixyAddress = I2cAddr.create7bit(0x54);
+
     byte[] readCache;
 
     @Override

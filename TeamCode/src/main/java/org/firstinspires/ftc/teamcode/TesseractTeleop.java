@@ -33,8 +33,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
-
 /**
  * Official Tesseract Teleop
  */
@@ -53,6 +51,8 @@ public class TesseractTeleop extends OpMode {
     private DcMotor m2;
     private DcMotor m3;
 
+    private MechanumChassis m;
+
     @Override
     public void init() {
         telemetry.addData("Status", "Initialized");
@@ -60,23 +60,14 @@ public class TesseractTeleop extends OpMode {
         m1 = hardwareMap.dcMotor.get("m1");
         m2 = hardwareMap.dcMotor.get("m2");
         m3 = hardwareMap.dcMotor.get("m3");
+        m = new MechanumChassis(m0, m1, m2, m3, this);
     }
 
     @Override
     public void loop() {
-        Vector2D v = new Vector2D(gamepad1.right_stick_x, gamepad1.right_stick_y);
-        r = Math.hypot(v.GetXComponent(), v.GetYComponent());
-        robotAngle = Math.atan2(v.GetYComponent(), v.GetXComponent()) - Math.PI / 4;
-        rightX = gamepad1.right_stick_x;
-        v0 = r * Math.cos(robotAngle) + rightX;
-        v1 = r * Math.sin(robotAngle) - rightX;
-        v2 = r * Math.sin(robotAngle) + rightX;
-        v3 = r * Math.cos(robotAngle) - rightX;
-
-        m0.setPower(v0);
-        m1.setPower(v1);
-        m2.setPower(v2);
-        m3.setPower(v3);
-
+        Vector2D v = new Vector2D(gamepad1.right_stick_x, -gamepad1.right_stick_y);
+        m.setDirectionVector(v);
+        m.addJoystickRotation(gamepad1.left_stick_x);
+        m.runContinuos();
     }
 }
