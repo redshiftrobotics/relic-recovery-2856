@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.I2cDevice;
@@ -40,6 +41,7 @@ public class MechanumChassis {
     private BNO055IMU imu;
 
     private float tweenTime = 1;
+    private float rotationTarget = 0;
 
     private LinearOpMode context;
 
@@ -108,12 +110,26 @@ public class MechanumChassis {
         return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
     }
 
-    void run(long millis) {
+    public void setRotationTarget(float degrees) {
+        rotationTarget = degrees;
+    }
+
+    public void turnToTarget() {
+        while(context.opModeIsActive() && Math.abs(rotationTarget - getRotation()) > 0.4) {
+            m0.setPower((getRotation() - rotationTarget) / 30);
+            m1.setPower(-(getRotation() - rotationTarget) / 30);
+            m2.setPower(-(getRotation() - rotationTarget) / 30);
+            m3.setPower((getRotation() - rotationTarget) / 30);
+
+            context.telemetry.addData("rotation: ", getRotation());
+            context.telemetry.update();
+        }
+    }
+
+    void run(long millis, float startSpeed, float endSpeed) {
         long start = System.currentTimeMillis();
         float P;
         float elapsedTime;
-        float startSpeed = 0;
-        float endSpeed = 1;
         double power;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             elapsedTime = System.currentTimeMillis() - start;
@@ -125,7 +141,7 @@ public class MechanumChassis {
                 power = ((endSpeed - startSpeed)/2) * Math.cos((Math.PI*(millis-tweenTime-elapsedTime)) / tweenTime) + (endSpeed + startSpeed) / 2;
             }
 
-            P = getRotation() / 30;
+            P = (getRotation() - rotationTarget) / 30;
             m0.setPower(speed0 * power + P);
             m1.setPower(speed1 * power - P);
             m2.setPower(speed2 * power - P);
@@ -133,19 +149,6 @@ public class MechanumChassis {
             context.idle();
         }
         stopMotors();
-    }
-
-    void columnAlign(OpticalDistanceSensor ods) {
-        while((ods.getLightDetected() - .9)*1024 < 65 && context.opModeIsActive()) {
-            context.telemetry.addData("ODS", ods.getLightDetected());
-            context.telemetry.update();
-            float P;
-            P = getRotation() / 30;
-            m0.setPower(speed0 + P);
-            m1.setPower(speed1 - P);
-            m2.setPower(speed2 - P);
-            m3.setPower(speed3 + P);
-        }
     }
 
     void runContinuos() {

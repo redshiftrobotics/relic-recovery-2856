@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -39,6 +40,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 /**
  * For consisten PID
  */
+@Disabled
 @Autonomous(name = "Mechanum Auto Test")
 public class MechanumTestAuto extends LinearOpMode {
     MechanumChassis m;
@@ -49,15 +51,16 @@ public class MechanumTestAuto extends LinearOpMode {
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
             hardwareMap.dcMotor.get("m3"),
+                hardwareMap.get(BNO055IMU.class, "imu"),
             this
         );
 
         telemetry.addData("Status", "Initialized");
         waitForStart();
 
-        Vector2D testVec = new Vector2D(0, 1);
+        Vector2D testVec = new Vector2D(-1, 0);
         m.setDirectionVector(testVec);
-        m.run(1000);
+        m.run(5000, 0, 1);
     }
 
 }
