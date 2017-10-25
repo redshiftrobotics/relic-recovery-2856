@@ -32,35 +32,35 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Gamepad;
 
 /**
  * Official Tesseract Teleop
  */
 @TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
-    double r;
-    double robotAngle;
-    double rightX;
-    double v0;
-    double v1;
-    double v2;
-    double v3;
-
-    private DcMotor m0;
-    private DcMotor m1;
-    private DcMotor m2;
-    private DcMotor m3;
-
     private MechanumChassis m;
-
+    private DcMotor lift;
     @Override
     public void init() {
+
+        // Needs tuning
+        hardwareMap.servo.get("leftTentacle").setPosition(1);
+        hardwareMap.servo.get("rightTentacle").setPosition(0);
+
+        // Initialize non-drivetrain motors.
+        lift = hardwareMap.dcMotor.get("lift");
+
+        // Initialize drive-train with appropriate motors and OpMode context.
+        m = new MechanumChassis(
+                hardwareMap.dcMotor.get("m0"),
+                hardwareMap.dcMotor.get("m1"),
+                hardwareMap.dcMotor.get("m2"),
+                hardwareMap.dcMotor.get("m3"),
+                this
+        );
+
         telemetry.addData("Status", "Initialized");
-        m0 = hardwareMap.dcMotor.get("m0");
-        m1 = hardwareMap.dcMotor.get("m1");
-        m2 = hardwareMap.dcMotor.get("m2");
-        m3 = hardwareMap.dcMotor.get("m3");
-        m = new MechanumChassis(m0, m1, m2, m3, this);
     }
 
     @Override
@@ -69,5 +69,20 @@ public class TesseractTeleop extends OpMode {
         m.setDirectionVector(v);
         m.addJoystickRotation(gamepad1.left_stick_x);
         m.runContinuos();
+        liftControl(gamepad1);
+    }
+
+    /***
+     * Controls the movement of the glyph lifter.
+     * @param pad The joystick to put assign this control to.
+     */
+    private void liftControl(Gamepad pad) {
+        if(pad.right_bumper) {
+            lift.setPower(1);
+        } else if (pad.left_bumper) {
+            lift.setPower(-1);
+        } else {
+            lift.setPower(0);
+        }
     }
 }
