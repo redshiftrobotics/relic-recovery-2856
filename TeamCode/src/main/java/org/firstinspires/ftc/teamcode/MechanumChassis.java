@@ -130,31 +130,33 @@ public class MechanumChassis {
         long start = System.currentTimeMillis();
         float P;
         float elapsedTime;
-        double power;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             elapsedTime = System.currentTimeMillis() - start;
-            if (elapsedTime <= tweenTime) {
-                power = ((startSpeed - endSpeed)/2) * Math.cos((Math.PI*elapsedTime) / tweenTime) + (startSpeed + endSpeed) / 2;
-            } else if (elapsedTime < millis - tweenTime) {
-                power = endSpeed;
-            } else { // elapsedTime > millis - tweenTime
-                power = ((endSpeed - startSpeed)/2) * Math.cos((Math.PI*(millis-tweenTime-elapsedTime)) / tweenTime) + (endSpeed + startSpeed) / 2;
-            }
-
             P = (getRotation() - rotationTarget) / 30;
-            m0.setPower(speed0 * power + P);
-            m1.setPower(speed1 * power - P);
-            m2.setPower(speed2 * power - P);
-            m3.setPower(speed3 * power + P);
+            setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
             context.idle();
         }
         stopMotors();
     }
 
-    void runContinuos() {
-        m0.setPower(speed0);
-        m1.setPower(speed1);
-        m2.setPower(speed2);
-        m3.setPower(speed3);
+    private double calculateTweenCurve(long millis, float elapsedTime, double startSpeed, double endSpeed) {
+        if (elapsedTime <= tweenTime) {
+            return ((startSpeed - endSpeed)/2) * Math.cos((Math.PI*elapsedTime) / tweenTime) + (startSpeed + endSpeed) / 2;
+        } else if (elapsedTime < millis - tweenTime) {
+            return endSpeed;
+        } else { // elapsedTime > millis - tweenTime
+            return ((endSpeed - startSpeed)/2) * Math.cos((Math.PI*(millis-tweenTime-elapsedTime)) / tweenTime) + (endSpeed + startSpeed) / 2;
+        }
+    }
+
+    void setMotorPowers() {
+        setMotorPowers(1, 0);
+    }
+
+    private void setMotorPowers(double power, float P) {
+        m0.setPower(speed0 * power + P);
+        m1.setPower(speed1 * power - P);
+        m2.setPower(speed2 * power - P);
+        m3.setPower(speed3 * power + P);
     }
 }
