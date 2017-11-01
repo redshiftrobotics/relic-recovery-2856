@@ -96,6 +96,7 @@ public class VuforiaTest extends LinearOpMode {
                 rotation = Orientation.getOrientation(matrixPosition, AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
                 position = matrixPosition.getTranslation();
 
+
                 /**
                  * position.get(angle) where angle = 0, 1, or 2 will return the X, Y, and Z translation relative to the target
                  */
