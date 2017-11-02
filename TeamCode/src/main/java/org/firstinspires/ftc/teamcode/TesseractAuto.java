@@ -37,17 +37,19 @@ public class TesseractAuto extends LinearOpMode {
             this
         );
 
-        VuforiaHelper vHelper = new VuforiaHelper(this);
+        // Set global tween time.
+        m.setTweenTime(700);
 
-        telemetry.addData("Status", "Initialized");
-        telemetry.update();
+//        VuforiaHelper vHelper = new VuforiaHelper(this);
+
         char pos = 'A';
         String side = "RED";
         int sideModifier = 1;
-
         ColorSensor js = hardwareMap.colorSensor.get("jsRight");
+        boolean jsConnected = false;
+        while(!isStarted()) {
 
-        while(!opModeIsActive()) {
+            // Side and position configuration.
             if(gamepad1.a) {
                 pos = 'A';
                 sleep(300);
@@ -66,44 +68,57 @@ public class TesseractAuto extends LinearOpMode {
                 sleep(300);
             }
 
+            // Check for real values from the color sensor... This will catch and unplugged or misconfigured sensor.
+            if(js.red() != 255 && js.red() != 0 && js.blue() != 0 && js.red() != 255) {
+                jsConnected = true;
+            }
+
+            // Update the drive team.
             telemetry.addData("Position: ", pos);
             telemetry.addData("Side: ", side);
+            telemetry.addData("Jewel Color Sensor Connected ", jsConnected);
             telemetry.update();
-            idle();
         }
 
         waitForStart();
 
         // Process the VuMark
-        RelicRecoveryVuMark mark = vHelper.getVuMark();
+//        RelicRecoveryVuMark mark = vHelper.getVuMark();
 
-        // Set global tween time.
-        m.setTweenTime(700);
+//        telemetry.log().add("DETECTED COLUMN: " + mark);
 
-        // Strafe off motion
+        // Strafe off motion setup.
         Vector2D testVec = new Vector2D(-1*sideModifier, 0);
         m.setDirectionVector(testVec);
 
-        if (side.equals("BLUE")) {
-            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_DOWN);
-        } else {
-            rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
+        // Lower the tentacles.
+        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_DOWN);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
+
+        sleep(500);
+
+        // Detect color and kick correct jewel.
+        if(js.red() > js.blue()) {
+            telemetry.log().add("JEWEL SENSOR SAW:::: RED");
+            m.jewelKick(-1*sideModifier);
+        } else if (js.blue() > js.red()) {
+            telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
+            m.jewelKick(sideModifier); // essentially 1 * sideModifier
         }
+        // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
+        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+        sleep(1000);
 
-
-        if(js.blue() > js.red()) {
-            m.setRotationTarget(10*sideModifier);
-        } else {
-            m.setRotationTarget(-10*sideModifier);
-        }
-
-        m.turnToTarget();
+        // Return to home heading after jewel kick.
         m.setRotationTarget(0);
         m.turnToTarget();
 
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP + .1);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP - .1);
 
+        testVec.SetComponents(0, 1);
+        m.setDirectionVector(testVec);
+        m.run(1000, 0, 1);
+/*
 
         if (pos == 'A') {
             switch (mark) {
@@ -145,6 +160,7 @@ public class TesseractAuto extends LinearOpMode {
 
         depositBlock();
         m.run(1000, 0, 1);
+        */
     }
 
     void depositBlock() {
