@@ -40,7 +40,10 @@ public class TesseractAuto extends LinearOpMode {
         // Set global tween time.
         m.setTweenTime(700);
 
-//        VuforiaHelper vHelper = new VuforiaHelper(this);
+        telemetry.log().add("Initializing Vuforia");
+        VuforiaHelper vHelper = new VuforiaHelper(this);
+        telemetry.log().add("Done Initializing Vuforia");
+
 
         char pos = 'A';
         String side = "RED";
@@ -83,9 +86,9 @@ public class TesseractAuto extends LinearOpMode {
         waitForStart();
 
         // Process the VuMark
-//        RelicRecoveryVuMark mark = vHelper.getVuMark();
+        RelicRecoveryVuMark mark = vHelper.getVuMark();
 
-//        telemetry.log().add("DETECTED COLUMN: " + mark);
+        telemetry.log().add("DETECTED COLUMN: " + mark);
 
         // Strafe off motion setup.
         Vector2D testVec = new Vector2D(-1*sideModifier, 0);
@@ -101,24 +104,21 @@ public class TesseractAuto extends LinearOpMode {
         if(js.red() > js.blue()) {
             telemetry.log().add("JEWEL SENSOR SAW:::: RED");
             m.jewelKick(-1*sideModifier);
-        } else if (js.blue() > js.red()) {
+        } else {
             telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
             m.jewelKick(sideModifier); // essentially 1 * sideModifier
         }
         // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
         lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
         rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
-        sleep(1000);
+
+        sleep(500);
 
         // Return to home heading after jewel kick.
         m.setRotationTarget(0);
         m.turnToTarget();
 
-
-        testVec.SetComponents(0, 1);
-        m.setDirectionVector(testVec);
-        m.run(1000, 0, 1);
-/*
+        telemetry.log().add("FINISHED RESETTING TO HOME ROTATION");
 
         if (pos == 'A') {
             switch (mark) {
@@ -135,32 +135,55 @@ public class TesseractAuto extends LinearOpMode {
                     break;
             }
         } else {
-            m.setRotationTarget(-90 * sideModifier);
-            m.turnToTarget();
+            telemetry.log().add("Executing on position B");
+            testVec.SetComponents(0, 1);
+            m.setDirectionVector(testVec);
             switch (mark) {
                 case LEFT:
-                    m.run(3600, 0, 1);
+                    telemetry.log().add("CASE LEFT");
+                    m.run(2400, 0, 1);
+                    m.setRotationTarget(-90*sideModifier);
+                    m.turnToTarget();
+                    testVec.SetComponents(-1*sideModifier, 0);
+                    m.setDirectionVector(testVec);
+                    m.setTweenTime(0);
+                    m.run(600, 0, 1);
+                    m.setTweenTime(700);
                     break;
                 case CENTER:
-                    m.run(3100, 0, 1);
+                    telemetry.log().add("CASE CENTER");
+                    m.run(2400, 0, 1);
+                    m.setRotationTarget(-90*sideModifier);
+                    m.turnToTarget();
                     break;
                 case RIGHT:
-                    m.run(2500, 0, 1);
+                    telemetry.log().add("CASE RIGHT");
+                    m.run(1750, 0, 1);
+                    m.setRotationTarget(-90*sideModifier);
+                    m.turnToTarget();
                     break;
             }
         }
-        testVec.SetComponents(0, 1);
-        m.setDirectionVector(testVec);
-
         if(pos == 'A') {
+            testVec.SetComponents(0, 1);
+            m.setDirectionVector(testVec);
             m.run(2200, 0, 1);
         } else {
-            m.run(700, 0, 1);
+            m.setTweenTime(0);
+            testVec.SetComponents(0, 1);
+            m.setDirectionVector(testVec);
+            m.run(300, 0, 1);
+            m.setTweenTime(700);
         }
 
         depositBlock();
         m.run(1000, 0, 1);
-        */
+        testVec.SetComponents(0, -1);
+        m.setDirectionVector(testVec);
+        m.run(1000, 0, 1);
+        testVec.SetComponents(0, 1);
+        m.setDirectionVector(testVec);
+        m.run(700, 0, 1);
     }
 
     void depositBlock() {

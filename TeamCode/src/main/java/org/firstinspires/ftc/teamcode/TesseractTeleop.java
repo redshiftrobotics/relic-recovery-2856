@@ -94,11 +94,11 @@ public class TesseractTeleop extends OpMode {
 
     private void intakeControl(Gamepad pad) {
         if(pad.right_trigger > 0.1) {
-            lCollect.setPower(1);
-            rCollect.setPower(-1);
+            lCollect.setPower(0.4);
+            rCollect.setPower(-0.4);
         } else if (pad.left_trigger > 0.1) {
-            lCollect.setPower(-1);
-            rCollect.setPower(1);
+            lCollect.setPower(-0.4);
+            rCollect.setPower(0.4);
         } else {
             lCollect.setPower(0);
             rCollect.setPower(0);
