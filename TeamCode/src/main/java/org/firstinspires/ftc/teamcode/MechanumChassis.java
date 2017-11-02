@@ -43,6 +43,8 @@ public class MechanumChassis {
     private float tweenTime = 1;
     private float rotationTarget = 0;
 
+    public boolean debugModeEnabled = false;
+
     private LinearOpMode context;
 
     MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU imu, LinearOpMode context) {
@@ -116,14 +118,41 @@ public class MechanumChassis {
 
     public void turnToTarget() {
         while(context.opModeIsActive() && Math.abs(rotationTarget - getRotation()) > 0.4) {
-            m0.setPower((getRotation() - rotationTarget) / 30);
-            m1.setPower(-(getRotation() - rotationTarget) / 30);
-            m2.setPower(-(getRotation() - rotationTarget) / 30);
-            m3.setPower((getRotation() - rotationTarget) / 30);
+            if (debugModeEnabled) {
+                context.telemetry.addData("turnToTarget", "Rotational Error: " + (getRotation() - rotationTarget));
+                context.telemetry.update();
+            }
+            m0.setPower((getRotation() - rotationTarget) / 40);
+            m1.setPower(-(getRotation() - rotationTarget) / 40);
+            m2.setPower(-(getRotation() - rotationTarget) / 40);
+            m3.setPower((getRotation() - rotationTarget) / 40);
+        }
+        stopMotors();
+    }
 
-            context.telemetry.addData("rotation: ", getRotation());
+    /***
+     * This method is separated from a normal turn because we don't care about precision but more importantly,
+     * the oscillations during a P turn will cause the robot to rock off the balance board at a skewed angle, thus loosing traction.
+     * A single imprecise turn fixes this issue.
+     */
+    public void jewelKick(int direction) {
+        long start = System.currentTimeMillis();
+        long jewelKickTurnTime = 700;
+        while (start + jewelKickTurnTime > System.currentTimeMillis() && context.opModeIsActive()) {
+            if (debugModeEnabled) {
+                context.telemetry.addData("jewelKick", "Kick running");
+                context.telemetry.update();
+            }
+            m0.setPower(0.25*direction);
+            m1.setPower(-0.25*direction);
+            m2.setPower(-0.25*direction);
+            m3.setPower(0.25*direction);
+        }
+        if (debugModeEnabled) {
+            context.telemetry.addData("jewelKick", "Kick ended");
             context.telemetry.update();
         }
+        stopMotors();
     }
 
     void run(long millis, float startSpeed, float endSpeed) {
@@ -134,7 +163,6 @@ public class MechanumChassis {
             elapsedTime = System.currentTimeMillis() - start;
             P = (getRotation() - rotationTarget) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
-            context.idle();
         }
         stopMotors();
     }
@@ -158,5 +186,11 @@ public class MechanumChassis {
         m1.setPower(speed1 * power - P);
         m2.setPower(speed2 * power - P);
         m3.setPower(speed3 * power + P);
+        if (debugModeEnabled) {
+            context.telemetry.addData("run P", P);
+            context.telemetry.addData("run Tween Power Modifier", power);
+            context.telemetry.addData("run Motor Speed Actual", speed0*power + P);
+            context.telemetry.update();
+        }
     }
 }
