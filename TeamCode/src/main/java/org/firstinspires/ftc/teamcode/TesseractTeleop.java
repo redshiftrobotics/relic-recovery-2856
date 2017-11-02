@@ -52,8 +52,8 @@ public class TesseractTeleop extends OpMode {
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
 
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP + .1);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP - .1);
+        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
+        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
 
         // Initialize drive-train with appropriate motors and OpMode context.
         m = new MechanumChassis(
