@@ -168,6 +168,11 @@ public class MechanumChassis {
     }
 
     private double calculateTweenCurve(long millis, float elapsedTime, double startSpeed, double endSpeed) {
+        if (debugModeEnabled) {
+            context.telemetry.addData("run elapsedTime", elapsedTime);
+            context.telemetry.addData("run targetTime", millis);
+            context.telemetry.update();
+        }
         if (elapsedTime <= tweenTime) {
             return ((startSpeed - endSpeed)/2) * Math.cos((Math.PI*elapsedTime) / tweenTime) + (startSpeed + endSpeed) / 2;
         } else if (elapsedTime < millis - tweenTime) {
@@ -186,11 +191,5 @@ public class MechanumChassis {
         m1.setPower(speed1 * power - P);
         m2.setPower(speed2 * power - P);
         m3.setPower(speed3 * power + P);
-        if (debugModeEnabled) {
-            context.telemetry.addData("run P", P);
-            context.telemetry.addData("run Tween Power Modifier", power);
-            context.telemetry.addData("run Motor Speed Actual", speed0*power + P);
-            context.telemetry.update();
-        }
     }
 }

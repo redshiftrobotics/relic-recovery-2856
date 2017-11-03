@@ -151,12 +151,14 @@ public class TesseractAuto extends LinearOpMode {
                 case CENTER:
                     telemetry.log().add("CASE CENTER");
                     m.run(2400, 0, 1);
+                    telemetry.log().add("Finished running, starting turn");
                     m.setRotationTarget(-90*sideModifier);
                     m.turnToTarget();
                     break;
                 case RIGHT:
                     telemetry.log().add("CASE RIGHT");
                     m.run(1750, 0, 1);
+                    telemetry.log().add("Finished running, starting turn");
                     m.setRotationTarget(-90*sideModifier);
                     m.turnToTarget();
                     break;
