@@ -37,6 +37,8 @@ public class TesseractAuto extends LinearOpMode {
             this
         );
 
+        m.debugModeEnabled = true;
+
         // Set global tween time.
         m.setTweenTime(700);
 
@@ -100,13 +102,13 @@ public class TesseractAuto extends LinearOpMode {
 
         sleep(500);
 
-        // Detect color and kick correct jewel.
+        // Detect color and kick correct jewel. No need to side modify these!!!
         if(js.red() > js.blue()) {
             telemetry.log().add("JEWEL SENSOR SAW:::: RED");
-            m.jewelKick(-1*sideModifier);
+            m.jewelKick(-1);
         } else {
             telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
-            m.jewelKick(sideModifier); // essentially 1 * sideModifier
+            m.jewelKick(1);
         }
         // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
         lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
@@ -138,15 +140,23 @@ public class TesseractAuto extends LinearOpMode {
             m.setDirectionVector(testVec);
             switch (mark) {
                 case LEFT:
-                    telemetry.log().add("CASE LEFT");
-                    m.run(2400, 0, 1);
-                    m.setRotationTarget(-90*sideModifier);
-                    m.turnToTarget();
-                    testVec.SetComponents(-1*sideModifier, 0);
-                    m.setDirectionVector(testVec);
-                    m.setTweenTime(0);
-                    m.run(600, 0, 1);
-                    m.setTweenTime(700);
+                    if (side.equals("BLUE")) {
+                        telemetry.log().add("CASE RIGHT");
+                        m.run(1750, 0, 1);
+                        telemetry.log().add("Finished running, starting turn");
+                        m.setRotationTarget(-90*sideModifier);
+                        m.turnToTarget();
+                    } else {
+                        telemetry.log().add("CASE LEFT");
+                        m.run(2400, 0, 1);
+                        m.setRotationTarget(-90 * sideModifier);
+                        m.turnToTarget();
+                        testVec.SetComponents(-1 * sideModifier, 0);
+                        m.setDirectionVector(testVec);
+                        m.setTweenTime(0);
+                        m.run(600, 0, 1);
+                        m.setTweenTime(700);
+                    }
                     break;
                 case CENTER:
                     telemetry.log().add("CASE CENTER");
@@ -156,11 +166,23 @@ public class TesseractAuto extends LinearOpMode {
                     m.turnToTarget();
                     break;
                 case RIGHT:
-                    telemetry.log().add("CASE RIGHT");
-                    m.run(1750, 0, 1);
-                    telemetry.log().add("Finished running, starting turn");
-                    m.setRotationTarget(-90*sideModifier);
-                    m.turnToTarget();
+                    if (side.equals("BLUE")) {
+                        telemetry.log().add("CASE LEFT");
+                        m.run(2400, 0, 1);
+                        m.setRotationTarget(-90 * sideModifier);
+                        m.turnToTarget();
+                        testVec.SetComponents(-1 * sideModifier, 0);
+                        m.setDirectionVector(testVec);
+                        m.setTweenTime(0);
+                        m.run(600, 0, 1);
+                        m.setTweenTime(700);
+                    } else {
+                        telemetry.log().add("CASE RIGHT");
+                        m.run(1750, 0, 1);
+                        telemetry.log().add("Finished running, starting turn");
+                        m.setRotationTarget(-90 * sideModifier);
+                        m.turnToTarget();
+                    }
                     break;
             }
         }
@@ -181,6 +203,7 @@ public class TesseractAuto extends LinearOpMode {
         testVec.SetComponents(0, -1);
         m.setDirectionVector(testVec);
         m.run(1000, 0, 1);
+        depositBlock();
         testVec.SetComponents(0, 1);
         m.setDirectionVector(testVec);
         m.run(700, 0, 1);

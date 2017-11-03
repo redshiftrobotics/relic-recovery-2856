@@ -83,10 +83,10 @@ public class TesseractTeleop extends OpMode {
      * @param pad The joystick to put assign this control to.
      */
     private void liftControl(Gamepad pad) {
-        if(pad.right_bumper) {
-            lift.setPower(1);
-        } else if (pad.left_bumper) {
-            lift.setPower(-1);
+        if(pad.left_bumper) {
+            lift.setPower(1); // out
+        } else if (pad.left_trigger > 0.1) {
+            lift.setPower(-1); // in
         } else {
             lift.setPower(0);
         }
@@ -94,10 +94,10 @@ public class TesseractTeleop extends OpMode {
 
     private void intakeControl(Gamepad pad) {
         if(pad.right_trigger > 0.1) {
-            lCollect.setPower(0.4);
+            lCollect.setPower(0.4); // in
             rCollect.setPower(-0.4);
-        } else if (pad.left_trigger > 0.1) {
-            lCollect.setPower(-0.4);
+        } else if (pad.right_bumper) {
+            lCollect.setPower(-0.4); // out
             rCollect.setPower(0.4);
         } else {
             lCollect.setPower(0);
