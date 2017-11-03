@@ -112,8 +112,6 @@ public class TesseractAuto extends LinearOpMode {
         lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
         rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
 
-        sleep(500);
-
         // Return to home heading after jewel kick.
         m.setRotationTarget(0);
         m.turnToTarget();
