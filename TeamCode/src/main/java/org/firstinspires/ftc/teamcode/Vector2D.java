@@ -79,7 +79,12 @@ public class Vector2D {
     
     public void MultiplyScalar( double nFactor )
     {
-      m_nXComponent *= nFactor;
-      m_nYComponent *= nFactor;
+        m_nXComponent *= nFactor;
+        m_nYComponent *= nFactor;
+    }
+
+    final public void Rotate( double nDegrees ) // Designated as final so compiler will inline
+    {
+        this.AddPolar(this.GetMagnitude(), nDegrees);
     }
 }
