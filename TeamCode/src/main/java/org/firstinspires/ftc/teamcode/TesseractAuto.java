@@ -87,6 +87,7 @@ public class TesseractAuto extends LinearOpMode {
 
         jsL = hardwareMap.colorSensor.get("jsLeft");
         jsR = hardwareMap.colorSensor.get("jsRight");
+        js = jsR;
     }
 
     void depositBlock() {
@@ -101,7 +102,7 @@ public class TesseractAuto extends LinearOpMode {
 
     private void hardwareValidation() {
         // Check for real values from the color sensor... This will catch and unplugged or misconfigured sensor.
-        if(js.red() != 255 && js.red() != 0 && js.blue() != 0 && js.red() != 255) {
+        if (js.red() != 255 && js.red() != 0 && js.blue() != 0 && js.red() != 255) {
             jsConnected = true;
         }
     }
