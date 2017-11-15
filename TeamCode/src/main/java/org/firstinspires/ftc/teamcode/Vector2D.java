@@ -83,8 +83,19 @@ public class Vector2D {
         m_nYComponent *= nFactor;
     }
 
-    final public void Rotate( double nDegrees ) // Designated as final so compiler will inline
+    public void Rotate( double nDegrees )
     {
-        this.AddPolar(this.GetMagnitude(), nDegrees);
+        this.AddPolar(GetMagnitude(), nDegrees);
+    }
+
+
+    public void FlipVertically()
+    {
+        m_nYComponent *= -1;
+    }
+
+    public void FlipHorizontally()
+    {
+        m_nXComponent *= -1;
     }
 }
