@@ -5,9 +5,13 @@ package org.firstinspires.ftc.teamcode;
  */
 
 public class Vector2D {
+
+    // Unit vectors
+    static final Vector2D UNIT_VECTOR_IHAT = new Vector2D(1, 0);
+    static final Vector2D UNIT_VECTOR_JHAT = new Vector2D(0, 1);
+
     private double m_nXComponent;
     private double m_nYComponent;
-
 
     public Vector2D( Vector2D vecVector ) { 
         this.m_nXComponent = vecVector.GetXComponent();
