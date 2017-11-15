@@ -3,12 +3,8 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.I2cDevice;
-import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -40,6 +36,8 @@ public class MechanumChassis {
     private DcMotor m3;
     private BNO055IMU imu;
 
+    private float teleopHeading = 0;
+
     private float tweenTime = 1;
     private float rotationTarget = 0;
 
@@ -61,13 +59,17 @@ public class MechanumChassis {
         this.context = context;
     }
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, OpMode context) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU imu, OpMode context) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
+        this.imu = imu;
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        imu.initialize(parameters);
+
         initMotors();
-//        this.context = context;
     }
 
     private void initMotors() {
@@ -101,11 +103,9 @@ public class MechanumChassis {
         this.tweenTime = millis;
     }
 
-    void addJoystickRotation(double rotation){
-        speed0 += rotation;
-        speed1 -= rotation;
-        speed2 -= rotation;
-        speed3 += rotation;
+    void addTeleopIMUTarget(double joyInput) {
+        teleopHeading += 4 * joyInput;
+        setMotorPowers(1, (getRotation() - teleopHeading) / 40);
     }
 
     private float getRotation() {
@@ -122,10 +122,10 @@ public class MechanumChassis {
                 context.telemetry.addData("turnToTarget", "Rotational Error: " + (getRotation() - rotationTarget));
                 context.telemetry.update();
             }
-            m0.setPower((getRotation() - rotationTarget) / 40);
-            m1.setPower(-(getRotation() - rotationTarget) / 40);
-            m2.setPower(-(getRotation() - rotationTarget) / 40);
-            m3.setPower((getRotation() - rotationTarget) / 40);
+            m0.setPower(-(getRotation() - rotationTarget) / 40);
+            m1.setPower((getRotation() - rotationTarget) / 40);
+            m2.setPower((getRotation() - rotationTarget) / 40);
+            m3.setPower(-(getRotation() - rotationTarget) / 40);
         }
         stopMotors();
     }
@@ -187,9 +187,9 @@ public class MechanumChassis {
     }
 
     private void setMotorPowers(double power, float P) {
-        m0.setPower(speed0 * power + P);
-        m1.setPower(speed1 * power - P);
-        m2.setPower(speed2 * power - P);
-        m3.setPower(speed3 * power + P);
+        m0.setPower(speed0 * power - P);
+        m1.setPower(speed1 * power + P);
+        m2.setPower(speed2 * power + P);
+        m3.setPower(speed3 * power - P);
     }
 }

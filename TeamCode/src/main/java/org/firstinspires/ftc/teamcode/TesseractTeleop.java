@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -61,6 +62,7 @@ public class TesseractTeleop extends OpMode {
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
             hardwareMap.dcMotor.get("m3"),
+            hardwareMap.get(BNO055IMU.class, "imu"),
             this
         );
 
@@ -72,8 +74,7 @@ public class TesseractTeleop extends OpMode {
     public void loop() {
         Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
         m.setDirectionVector(v);
-        m.addJoystickRotation(gamepad1.left_stick_x);
-        m.setMotorPowers();
+        m.addTeleopIMUTarget(gamepad1.left_stick_x);
         liftControl(gamepad1);
         intakeControl(gamepad1);
     }

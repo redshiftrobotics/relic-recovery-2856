@@ -51,7 +51,7 @@ public class MechanumTestAuto extends LinearOpMode {
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
             hardwareMap.dcMotor.get("m3"),
-                hardwareMap.get(BNO055IMU.class, "imu"),
+            hardwareMap.get(BNO055IMU.class, "imu"),
             this
         );
 
