@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 /**
  * Created by NoahR on 9/16/17.
+ * Class to represent a Vector in 2D space.
  */
 
 public class Vector2D {
