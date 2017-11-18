@@ -34,14 +34,14 @@ public class Vector2D {
     }
     public double GetDirection()
     {
-        return Math.atan2( m_nYComponent, m_nXComponent );
+        return Math.toDegrees( Math.atan2( m_nYComponent, m_nXComponent ) );
     }
 
     public void Set( Vector2D vNewVector ) { this.SetComponents( vNewVector.GetXComponent(), vNewVector.GetYComponent() ); }
     public void SetPolar( double nMagnitude, double nDirection )
     {
-        m_nXComponent = nMagnitude * Math.cos( nDirection );
-        m_nYComponent = nMagnitude * Math.sin( nDirection );
+        m_nXComponent = nMagnitude * Math.cos( Math.toRadians(nDirection) );
+        m_nYComponent = nMagnitude * Math.sin( Math.toRadians(nDirection) );
     }
     public void SetComponents( double nXComponent, double nYComponent )
     {
@@ -52,8 +52,8 @@ public class Vector2D {
     public void Add( Vector2D vDelta ) { this.AddComponents( vDelta.GetXComponent(), vDelta.GetYComponent() ); }
     public void AddPolar( double nMagnitude, double nDirection )
     {
-        m_nXComponent += nMagnitude * Math.cos( nDirection );
-        m_nYComponent += nMagnitude * Math.sin( nDirection );
+        m_nXComponent += nMagnitude * Math.cos( Math.toRadians(nDirection) );
+        m_nYComponent += nMagnitude * Math.sin( Math.toRadians(nDirection) );
     }
     public void AddComponents( double nXComponent, double nYComponent )
     {
@@ -64,8 +64,8 @@ public class Vector2D {
     public void Multiply( Vector2D vVector ) { this.MultiplyComponents( vVector.GetXComponent(), vVector.GetYComponent() ); }
     public void MultiplyPolar( double nMagnitude, double nDirection )
     {
-        m_nXComponent *= nMagnitude * Math.cos( nDirection );
-        m_nYComponent *= nMagnitude * Math.sin( nDirection );
+        m_nXComponent *= nMagnitude * Math.cos( Math.toRadians(nDirection) );
+        m_nYComponent *= nMagnitude * Math.sin( Math.toRadians(nDirection) );
     }
     public void MultiplyComponents( double nXComponent, double nYComponent )
     {
@@ -86,7 +86,7 @@ public class Vector2D {
 
     public void Rotate( double nDegrees )
     {
-        this.AddPolar(GetMagnitude(), nDegrees);
+        this.SetPolar(this.GetMagnitude(), this.GetDirection() + nDegrees);
     }
 
 
