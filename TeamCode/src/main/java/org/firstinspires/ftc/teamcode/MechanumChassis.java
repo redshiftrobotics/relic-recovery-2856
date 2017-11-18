@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -45,29 +46,29 @@ public class MechanumChassis {
 
     private LinearOpMode context;
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU imu, LinearOpMode context) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, LinearOpMode context) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
-        this.imu = imu;
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        imu.initialize(parameters);
+        this.imu = i;
+        this.imu.initialize(parameters);
 
         initMotors();
         this.context = context;
     }
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU imu, OpMode context) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, OpMode context) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
-        this.imu = imu;
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        imu.initialize(parameters);
+        this.imu = i;
+        this.imu.initialize(parameters);
 
         initMotors();
     }
@@ -103,13 +104,15 @@ public class MechanumChassis {
         this.tweenTime = millis;
     }
 
-    void addTeleopIMUTarget(double joyInput) {
+    void addTeleopIMUTarget(double joyInput, Telemetry tm) {
         teleopHeading += 4 * joyInput;
+        tm.addData("(rotation, teleopHeading, P value)", getRotation() + ", " + (getRotation() - teleopHeading) + ", " + teleopHeading);
+        tm.update();
         setMotorPowers(1, (getRotation() - teleopHeading) / 40);
     }
 
     private float getRotation() {
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
     }
 
     public void setRotationTarget(float degrees) {
@@ -165,6 +168,13 @@ public class MechanumChassis {
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
+    }
+
+    void addJoystickRotation(double rotation){
+        speed0 += rotation;
+        speed1 -= rotation;
+        speed2 -= rotation;
+        speed3 += rotation;
     }
 
     private double calculateTweenCurve(long millis, float elapsedTime, double startSpeed, double endSpeed) {

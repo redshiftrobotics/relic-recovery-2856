@@ -41,20 +41,22 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 @TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
     private MechanumChassis m;
-    private DcMotor lift;
+    private DcMotor lBelting;
+    private DcMotor rBelting;
     private DcMotor lCollect;
     private DcMotor rCollect;
     @Override
     public void init() {
 
         // Initialize non-drivetrain motors.
-        lift = hardwareMap.dcMotor.get("lift");
+        lBelting = hardwareMap.dcMotor.get("lBelting");
+        rBelting = hardwareMap.dcMotor.get("rBelting");
 
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
 
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+//        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
+//        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
 
         // Initialize drive-train with appropriate motors and OpMode context.
         m = new MechanumChassis(
@@ -74,8 +76,10 @@ public class TesseractTeleop extends OpMode {
     public void loop() {
         Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
         m.setDirectionVector(v);
-        m.addTeleopIMUTarget(gamepad1.left_stick_x);
-        liftControl(gamepad1);
+        m.addJoystickRotation(gamepad1.left_stick_x);
+        m.setMotorPowers();
+//        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
+        liftControl(gamepad2);
         intakeControl(gamepad1);
     }
 
@@ -84,25 +88,24 @@ public class TesseractTeleop extends OpMode {
      * @param pad The joystick to put assign this control to.
      */
     private void liftControl(Gamepad pad) {
-        if(pad.left_bumper) {
-            lift.setPower(1); // out
-        } else if (pad.left_trigger > 0.1) {
-            lift.setPower(-1); // in
-        } else {
-            lift.setPower(0);
+
+        lBelting.setPower(-pad.left_trigger);
+        rBelting.setPower(pad.right_trigger);
+
+        if (pad.left_bumper) {
+            lBelting.setPower(1);
+        } else if (pad.right_bumper) {
+            rBelting.setPower(-1);
         }
     }
 
     private void intakeControl(Gamepad pad) {
-        if(pad.right_trigger > 0.1) {
-            lCollect.setPower(0.8); // in
-            rCollect.setPower(-0.8);
-        } else if (pad.right_bumper) {
-            lCollect.setPower(-0.8); // out
+        rCollect.setPower(-pad.right_trigger);
+        lCollect.setPower(pad.left_trigger);
+
+        if (pad.right_bumper || pad.left_bumper) {
             rCollect.setPower(0.8);
-        } else {
-            lCollect.setPower(0);
-            rCollect.setPower(0);
+            lCollect.setPower(-0.8); // out
         }
     }
 }
