@@ -10,6 +10,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
 /**
  * Created by matt on 9/16/17.
@@ -56,26 +57,20 @@ public class MechanumChassis {
         this.imu = i;
         this.imu.initialize(parameters);
 
+
         initMotors();
         this.context = context;
     }
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, OpMode context) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
-
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        this.imu = i;
-        this.imu.initialize(parameters);
-
         initMotors();
     }
 
     private void initMotors() {
-        this.m1.setDirection(DcMotorSimple.Direction.REVERSE);
-        this.m2.setDirection(DcMotorSimple.Direction.REVERSE);
         m0.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -112,7 +107,7 @@ public class MechanumChassis {
     }
 
     private float getRotation() {
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
+        return (imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle + 120) % 360;
     }
 
     public void setRotationTarget(float degrees) {
@@ -122,13 +117,15 @@ public class MechanumChassis {
     public void turnToTarget() {
         while(context.opModeIsActive() && Math.abs(rotationTarget - getRotation()) > 0.4) {
             if (debugModeEnabled) {
+                context.telemetry.addData("turnToTarget", "target: "+ rotationTarget);
+                context.telemetry.addData("turnToTarget", "rotation: "+ getRotation());
                 context.telemetry.addData("turnToTarget", "Rotational Error: " + (getRotation() - rotationTarget));
                 context.telemetry.update();
             }
-            m0.setPower(-(getRotation() - rotationTarget) / 40);
+            m0.setPower((getRotation() - rotationTarget) / 40);
             m1.setPower((getRotation() - rotationTarget) / 40);
             m2.setPower((getRotation() - rotationTarget) / 40);
-            m3.setPower(-(getRotation() - rotationTarget) / 40);
+            m3.setPower((getRotation() - rotationTarget) / 40);
         }
         stopMotors();
     }
@@ -147,9 +144,20 @@ public class MechanumChassis {
                 context.telemetry.update();
             }
             m0.setPower(-0.25*direction);
+            m1.setPower(-0.25*direction);
+            m2.setPower(-0.25*direction);
+            m3.setPower(-0.25*direction);
+        }
+        start = System.currentTimeMillis();
+        while (start + jewelKickTurnTime > System.currentTimeMillis() && context.opModeIsActive()) {
+            if (debugModeEnabled) {
+                context.telemetry.addData("jewelKick", "Kick running");
+                context.telemetry.update();
+            }
+            m0.setPower(0.25*direction);
             m1.setPower(0.25*direction);
             m2.setPower(0.25*direction);
-            m3.setPower(-0.25*direction);
+            m3.setPower(0.25*direction);
         }
         if (debugModeEnabled) {
             context.telemetry.addData("jewelKick", "Kick ended");
@@ -164,7 +172,7 @@ public class MechanumChassis {
         float elapsedTime;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             elapsedTime = System.currentTimeMillis() - start;
-            P = (getRotation() - rotationTarget) / 30;
+            P = 0;//(getRotation() - rotationTarget) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
@@ -197,9 +205,9 @@ public class MechanumChassis {
     }
 
     private void setMotorPowers(double power, float P) {
-        m0.setPower(speed0 * power - P);
-        m1.setPower(speed1 * power + P);
-        m2.setPower(speed2 * power + P);
-        m3.setPower(speed3 * power - P);
+        m0.setPower(speed0 * power + P);
+        m1.setPower(-speed1 * power - P);
+        m2.setPower(-speed2 * power - P);
+        m3.setPower(speed3 * power + P);
     }
 }

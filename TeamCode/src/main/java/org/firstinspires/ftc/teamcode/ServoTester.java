@@ -19,8 +19,8 @@ public class ServoTester extends LinearOpMode {
 
         float lv = 0f;
         float rv = 0f;
-        Servo leftServo = hardwareMap.servo.get("lTentacle");
-        Servo rightServo = hardwareMap.servo.get("rTentacle");
+        Servo leftServo = hardwareMap.servo.get("magic");
+        Servo rightServo = hardwareMap.servo.get("lExtender");
         waitForStart();
 
         while(opModeIsActive()) {

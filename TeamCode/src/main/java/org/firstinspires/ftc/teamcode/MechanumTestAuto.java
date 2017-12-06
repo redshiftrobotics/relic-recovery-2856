@@ -51,8 +51,8 @@ public class MechanumTestAuto extends LinearOpMode {
 
         telemetry.addData("Status", "Initialized");
         waitForStart();
-        l.setPosition(1);
-        r.setPosition(1);
+        l.setPosition(0.85);
+        r.setPosition(0.85);
         Thread.sleep(7000);
         l.setPosition(0.2);
         r.setPosition(0.2);

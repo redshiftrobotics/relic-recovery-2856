@@ -14,9 +14,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
  */
 @Autonomous(name = "LegitSauceAutoSauce")
 public class TesseractAuto extends LinearOpMode {
-    private DcMotor lift;
     private Servo rTentacle;
     private Servo lTentacle;
+
+    private Servo lFlip;
+    private Servo rFlip;
+
+    DcMotor lLift;
+    DcMotor rLift;
+
     private MechanumChassis m;
     private Vector2D moveVec;
 
@@ -26,7 +32,7 @@ public class TesseractAuto extends LinearOpMode {
     private boolean jsConnected = false;
 
     private static final int TWEEN_TIME = 700;
-    private static final int LIFT_DEPOSIT_TIME = 1000;
+    private static final int LIFT_DEPOSIT_TIME = 2000;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
     private static final int HOME_HEADING = 0;
 
@@ -41,18 +47,31 @@ public class TesseractAuto extends LinearOpMode {
         configurationLoop();
         waitForStart();
 
+
         // Process the VuMark
         RelicRecoveryVuMark mark = vHelper.getVuMark();
         telemetry.log().add("DETECTED COLUMN: " + mark);
 
+//        m.hackTurn(-1);
+//        m.hackTurn(1);
+
         // Kick the jewel off.
         doJewel();
         navigateToColumn(mark);
+        m.hackRunShort();
         depositBlock();
         safetyPush(); // to ensure block is in column
     }
 
     void initialize() {
+        lFlip = hardwareMap.servo.get("lFlip");
+        rFlip = hardwareMap.servo.get("rFlip");
+        lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
+        rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
+
+        lLift = hardwareMap.dcMotor.get("lBelting");
+        rLift = hardwareMap.dcMotor.get("rBelting");
+
         // Initialize Vuforia
         telemetry.log().add("Initializing Vuforia...");
         vHelper = new VuforiaHelper(this);
@@ -61,8 +80,8 @@ public class TesseractAuto extends LinearOpMode {
         // Get hardware devices
         rTentacle = hardwareMap.servo.get("rTentacle");
         lTentacle = hardwareMap.servo.get("lTentacle");
-        lift = hardwareMap.dcMotor.get("lift");
-        lift.setDirection(DcMotor.Direction.REVERSE);
+
+        hardwareMap.servo.get("magic").setPosition(ServoValue.MAGIC_IN);
 
         // Initialize mechanum chassis.
         m = new MechanumChassis(
@@ -88,12 +107,16 @@ public class TesseractAuto extends LinearOpMode {
         jsL = hardwareMap.colorSensor.get("jsLeft");
         jsR = hardwareMap.colorSensor.get("jsRight");
         js = jsR;
+
     }
 
     void depositBlock() {
-        lift.setPower(1);
+        rLift.setPower(1);
+        lLift.setPower(-1);
         sleep(LIFT_DEPOSIT_TIME);
-        lift.setPower(0);
+        rLift.setPower(0);
+        lLift.setPower(0);
+
     }
 
     private int getSideCoefficient(StartPosition pos) {
@@ -135,7 +158,6 @@ public class TesseractAuto extends LinearOpMode {
             telemetry.update();
         }
     }
-
     private void doJewel() {
 
         // Lower the tentacles.
@@ -153,12 +175,12 @@ public class TesseractAuto extends LinearOpMode {
             m.jewelKick(1);
         }
         // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
-        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
 
         // Return to home heading after jewel kick.
-        m.setRotationTarget(HOME_HEADING);
-        m.turnToTarget();
+//        m.setRotationTarget(0);
+//        m.turnToTarget();
 
         telemetry.log().add("FINISHED RESETTING TO HOME ROTATION");
     }
@@ -182,19 +204,28 @@ public class TesseractAuto extends LinearOpMode {
             telemetry.log().add("Executing on position B");
             moveVec.SetComponents(0, 1);
             m.setDirectionVector(moveVec);
+            int blueTurn = 270;
+            int redTurn = 90;
             switch (mark) {
                 case LEFT:
                     if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
-                        telemetry.log().add("CASE RIGHT");
-                        m.run(1750, 0, 1);
-                        telemetry.log().add("Finished running, starting turn");
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                    } else {
-                        telemetry.log().add("CASE LEFT");
                         m.run(2400, 0, 1);
-                        m.setRotationTarget(-90 * sideModifier);
+                        telemetry.log().add("Finished running, starting turn");
+
+                        m.hackTurn(1);
+                        m.setRotationTarget(blueTurn);
+//                        m.setRotationTarget(-90-135 * sideModifier);
+//                        m.turnToTarget();
+
+                    } else {
+                        m.run(2400, 0, 1);
+
+
+                        m.hackTurn(-1);
+                        m.setRotationTarget(redTurn);
                         m.turnToTarget();
+
+
                         moveVec.SetComponents(-1 * sideModifier, 0);
                         m.setDirectionVector(moveVec);
                         m.setTweenTime(0);
@@ -204,7 +235,7 @@ public class TesseractAuto extends LinearOpMode {
                     break;
                 case CENTER:
                     telemetry.log().add("CASE CENTER");
-                    m.run(2400, 0, 1);
+                    m.run(2600, 0, 1);
                     telemetry.log().add("Finished running, starting turn");
                     m.setRotationTarget(-90 * sideModifier);
                     m.turnToTarget();
@@ -213,20 +244,35 @@ public class TesseractAuto extends LinearOpMode {
                     if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
                         telemetry.log().add("CASE LEFT");
                         m.run(2400, 0, 1);
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                        moveVec.SetComponents(-1 * sideModifier, 0);
-                        m.setDirectionVector(moveVec);
-                        m.setTweenTime(0);
-                        m.run(600, 0, 1);
-                        m.setTweenTime(TWEEN_TIME);
+
+                        m.hackTurn(1);
+                        m.setRotationTarget(blueTurn);
+//                        m.turnToTarget();
+
+
+//                        moveVec.SetComponents(-1 * sideModifier, 0);
+//                        m.setDirectionVector(moveVec);
+//                        m.setTweenTime(0);
+//                        m.run(600, 0, 1);
+//                        m.setTweenTime(TWEEN_TIME);
                     } else {
                         telemetry.log().add("CASE RIGHT");
                         m.run(1750, 0, 1);
                         telemetry.log().add("Finished running, starting turn");
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
+
+                        m.hackTurn(-1);
+                        m.setRotationTarget(redTurn);
+//                        m.turnToTarget();
+//                        m.setRotationTarget(-90-135 * sideModifier);
+//                        m.turnToTarget();
                     }
+                    break;
+                case UNKNOWN:
+                    telemetry.log().add("CASE UNKNOWN, GOING CENTER");
+                    m.run(2600, 0, 1);
+                    telemetry.log().add("Finished running, starting turn");
+                    m.setRotationTarget(-90 * sideModifier);
+                    m.turnToTarget();
                     break;
             }
         }
@@ -235,23 +281,25 @@ public class TesseractAuto extends LinearOpMode {
             m.setDirectionVector(moveVec);
             m.run(2200, 0, 1);
         } else {
-            m.setTweenTime(0);
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            m.run(300, 0, 1);
-            m.setTweenTime(TWEEN_TIME);
+//            m.setTweenTime(0);
+//            moveVec.SetComponents(0, 1);
+//            m.setDirectionVector(moveVec);
+//            m.run(300, 0, 1);
+//            m.setTweenTime(TWEEN_TIME);
         }
     }
 
     private void safetyPush() {
-        m.run(1000, 0, 1);
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(1000, 0, 1);
         depositBlock();
-        moveVec.SetComponents(0, 1);
-        m.setDirectionVector(moveVec);
-        m.run(TWEEN_TIME, 0, 1);
+
+//        m.run(1000, 0, 1);
+//        moveVec.SetComponents(0, -1);
+//        m.setDirectionVector(moveVec);
+//        m.run(1000, 0, 1);
+//        depositBlock();
+//        moveVec.SetComponents(0, 1);
+//        m.setDirectionVector(moveVec);
+//        m.run(TWEEN_TIME, 0, 1);
     }
 
     private enum StartPosition {

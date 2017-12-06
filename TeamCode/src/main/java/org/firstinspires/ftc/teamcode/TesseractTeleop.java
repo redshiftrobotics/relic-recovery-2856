@@ -34,6 +34,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.Servo;
 
 /**
  * Official Tesseract Teleop
@@ -45,27 +46,42 @@ public class TesseractTeleop extends OpMode {
     private DcMotor rBelting;
     private DcMotor lCollect;
     private DcMotor rCollect;
+    private Servo lFlip;
+    private Servo rFlip;
+
+    private Servo magic;
+
     @Override
     public void init() {
 
         // Initialize non-drivetrain motors.
         lBelting = hardwareMap.dcMotor.get("lBelting");
         rBelting = hardwareMap.dcMotor.get("rBelting");
+//
+//        lExtender = hardwareMap.servo.get("lExtender");
+//        rExtender = hardwareMap.servo.get("rExtender");
+
+
+        magic = hardwareMap.servo.get("magic");
+        magic.setPosition(ServoValue.MAGIC_IN);
+
+        lFlip = hardwareMap.servo.get("lFlip");
+        rFlip = hardwareMap.servo.get("rFlip");
+        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
 
-//        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
-//        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP);
+        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP);
 
         // Initialize drive-train with appropriate motors and OpMode context.
         m = new MechanumChassis(
             hardwareMap.dcMotor.get("m0"),
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
-            hardwareMap.dcMotor.get("m3"),
-            hardwareMap.get(BNO055IMU.class, "imu"),
-            this
+            hardwareMap.dcMotor.get("m3")
         );
 
         telemetry.addData("Status", "Initialized");
@@ -81,6 +97,7 @@ public class TesseractTeleop extends OpMode {
 //        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
         liftControl(gamepad2);
         intakeControl(gamepad1);
+        scoreControl(gamepad1);
     }
 
     /***
@@ -89,23 +106,53 @@ public class TesseractTeleop extends OpMode {
      */
     private void liftControl(Gamepad pad) {
 
+
+
+        // HACK TO GIVE TURNER FLIP
+        if(pad.dpad_down) {
+            lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+            rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+        } else if (pad.dpad_up) {
+            lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
+            rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
+        }
+
         lBelting.setPower(-pad.left_trigger);
         rBelting.setPower(pad.right_trigger);
 
-        if (pad.left_bumper) {
+        if (pad.left_bumper || pad.right_bumper) {
             lBelting.setPower(1);
-        } else if (pad.right_bumper) {
             rBelting.setPower(-1);
         }
     }
 
     private void intakeControl(Gamepad pad) {
+        if(pad.dpad_down) {
+            lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+            rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+        } else if (pad.dpad_up) {
+            lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
+            rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
+        }
+
         rCollect.setPower(-pad.right_trigger);
         lCollect.setPower(pad.left_trigger);
 
         if (pad.right_bumper || pad.left_bumper) {
             rCollect.setPower(0.8);
             lCollect.setPower(-0.8); // out
+        }
+    }
+
+    private void scoreControl(Gamepad pad) {
+        if (pad.y) {
+            magic.setPosition(ServoValue.MAGIC_IN);
+        }
+        if(pad.x) {
+            magic.setPosition(ServoValue.MAGIC_STAGED);
+        }
+        if(pad.a) {
+            magic.setPosition(ServoValue.MAGIC_DEPOLYED);
         }
     }
 }
