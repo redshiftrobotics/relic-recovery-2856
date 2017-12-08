@@ -38,6 +38,8 @@ public class MechanumChassis {
     private DcMotor m3;
     private BNO055IMU imu;
 
+    private float imuInitOffset = -1.0f;
+
     private float teleopHeading = 0;
 
     private float tweenTime = 1;
@@ -46,6 +48,8 @@ public class MechanumChassis {
     public boolean debugModeEnabled = false;
 
     private LinearOpMode context;
+
+    public float powerConstant = 0.9f;
 
     MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, LinearOpMode context) {
         this.m0 = m0;
@@ -56,8 +60,6 @@ public class MechanumChassis {
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         this.imu = i;
         this.imu.initialize(parameters);
-
-
         initMotors();
         this.context = context;
     }
@@ -75,6 +77,8 @@ public class MechanumChassis {
         m1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        m1.setDirection(DcMotor.Direction.REVERSE);
+        m2.setDirection(DcMotor.Direction.REVERSE);
     }
 
     private void stopMotors() {
@@ -86,7 +90,6 @@ public class MechanumChassis {
 
     //based on second post here ftcforum.usfirst.org/forum/ftc-technology/android-studio/6361-mecanum-wheels-drive-code-example
     void setDirectionVector(Vector2D vector) {
-        float powerConstant = 0.9f;
         double magnitude = Math.hypot(vector.GetXComponent(), vector.GetYComponent());
         double robotAngle = Math.atan2(vector.GetYComponent(), vector.GetXComponent()) - (Math.PI / 4);
         speed0 = magnitude * Math.cos(robotAngle) * powerConstant;
@@ -107,25 +110,47 @@ public class MechanumChassis {
     }
 
     private float getRotation() {
-        return (imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle + 120) % 360;
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle + 180;
     }
 
     public void setRotationTarget(float degrees) {
-        rotationTarget = degrees;
+        rotationTarget = degrees - imuInitOffset;
     }
 
     public void turnToTarget() {
-        while(context.opModeIsActive() && Math.abs(rotationTarget - getRotation()) > 0.4) {
+
+        if(imuInitOffset < 0 /* has not been set already */) {
+            imuInitOffset = getRotation();
+            rotationTarget = imuInitOffset - rotationTarget;
+        }
+
+        float P = 0;
+        float currentAngle;
+        while(context.opModeIsActive()) {
+            currentAngle = getRotation();
+            if (currentAngle + 360 - rotationTarget <= 180) {
+                P = (currentAngle -  rotationTarget + 360);
+            } else if (rotationTarget + 360 - currentAngle <= 180) {
+                P = (rotationTarget - currentAngle + 360) * -1;
+            } else if (currentAngle -  rotationTarget <= 180) {
+                P = (currentAngle -  rotationTarget);
+            }
+
+            if(Math.abs(P) < 0.07) {
+                break;
+            }
+
             if (debugModeEnabled) {
                 context.telemetry.addData("turnToTarget", "target: "+ rotationTarget);
                 context.telemetry.addData("turnToTarget", "rotation: "+ getRotation());
-                context.telemetry.addData("turnToTarget", "Rotational Error: " + (getRotation() - rotationTarget));
+                context.telemetry.addData("turnToTarget", "Rotational Error: " + P);
                 context.telemetry.update();
             }
-            m0.setPower((getRotation() - rotationTarget) / 40);
-            m1.setPower((getRotation() - rotationTarget) / 40);
-            m2.setPower((getRotation() - rotationTarget) / 40);
-            m3.setPower((getRotation() - rotationTarget) / 40);
+
+            m0.setPower(P / 20);
+            m1.setPower(-P / 20);
+            m2.setPower(-P / 20);
+            m3.setPower(P / 20);
         }
         stopMotors();
     }
@@ -206,8 +231,8 @@ public class MechanumChassis {
 
     private void setMotorPowers(double power, float P) {
         m0.setPower(speed0 * power + P);
-        m1.setPower(-speed1 * power - P);
-        m2.setPower(-speed2 * power - P);
+        m1.setPower(speed1 * power + P);
+        m2.setPower(speed2 * power + P);
         m3.setPower(speed3 * power + P);
     }
 }

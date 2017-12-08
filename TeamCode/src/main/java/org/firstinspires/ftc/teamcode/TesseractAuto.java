@@ -32,9 +32,12 @@ public class TesseractAuto extends LinearOpMode {
     private boolean jsConnected = false;
 
     private static final int TWEEN_TIME = 700;
-    private static final int LIFT_DEPOSIT_TIME = 2000;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
-    private static final int HOME_HEADING = 0;
+
+    private static final long CENTER_MOVE_TIME = 2700;
+    private static final long FAR_OFFSET = 400;
+    private static final long NEAR_OFFSET = -400;
+    private static final long CENTER_OFFSET = 0;
 
     private VuforiaHelper vHelper;
 
@@ -56,11 +59,9 @@ public class TesseractAuto extends LinearOpMode {
 //        m.hackTurn(1);
 
         // Kick the jewel off.
-        doJewel();
+//        doJewel();
         navigateToColumn(mark);
-        m.hackRunShort();
         depositBlock();
-        safetyPush(); // to ensure block is in column
     }
 
     void initialize() {
@@ -111,11 +112,30 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     void depositBlock() {
+        m.powerConstant = 0.5f;
+        m.setTweenTime(0);
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(1500, 0, 1);
         rLift.setPower(1);
         lLift.setPower(-1);
-        sleep(LIFT_DEPOSIT_TIME);
+        // allow block to reach top before backing
+        sleep(500);
+
+        m.powerConstant = 0.25f;
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(1600, 0, 1);
         rLift.setPower(0);
         lLift.setPower(0);
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(1000, 0, 1);
+        m.powerConstant = 0.9f;
+        m.setTweenTime(TWEEN_TIME);
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(700, 0, 1);
 
     }
 
@@ -186,120 +206,51 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void navigateToColumn(RelicRecoveryVuMark mark) {
-        if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
+
+        long unknownDefault = FAR_OFFSET;
+
+        telemetry.log().add("Executing on position B");
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+
+        if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
             switch (mark) {
                 case LEFT:
-                    m.run(1900, 0, 1);
+                    balanceToColumn(NEAR_OFFSET);
                     break;
                 case CENTER:
-                    m.run(1500, 0, 1);
+                    balanceToColumn(CENTER_OFFSET);
                     break;
                 case RIGHT:
-                    m.setTweenTime(0);
-                    m.run(600, 0, 1);
-                    m.setTweenTime(TWEEN_TIME);
-                    break;
-            }
-        } else {
-            telemetry.log().add("Executing on position B");
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            int blueTurn = 270;
-            int redTurn = 90;
-            switch (mark) {
-                case LEFT:
-                    if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
-                        m.run(2400, 0, 1);
-                        telemetry.log().add("Finished running, starting turn");
-
-                        m.hackTurn(1);
-                        m.setRotationTarget(blueTurn);
-//                        m.setRotationTarget(-90-135 * sideModifier);
-//                        m.turnToTarget();
-
-                    } else {
-                        m.run(2400, 0, 1);
-
-
-                        m.hackTurn(-1);
-                        m.setRotationTarget(redTurn);
-                        m.turnToTarget();
-
-
-                        moveVec.SetComponents(-1 * sideModifier, 0);
-                        m.setDirectionVector(moveVec);
-                        m.setTweenTime(0);
-                        m.run(600, 0, 1);
-                        m.setTweenTime(TWEEN_TIME);
-                    }
-                    break;
-                case CENTER:
-                    telemetry.log().add("CASE CENTER");
-                    m.run(2600, 0, 1);
-                    telemetry.log().add("Finished running, starting turn");
-                    m.setRotationTarget(-90 * sideModifier);
-                    m.turnToTarget();
-                    break;
-                case RIGHT:
-                    if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
-                        telemetry.log().add("CASE LEFT");
-                        m.run(2400, 0, 1);
-
-                        m.hackTurn(1);
-                        m.setRotationTarget(blueTurn);
-//                        m.turnToTarget();
-
-
-//                        moveVec.SetComponents(-1 * sideModifier, 0);
-//                        m.setDirectionVector(moveVec);
-//                        m.setTweenTime(0);
-//                        m.run(600, 0, 1);
-//                        m.setTweenTime(TWEEN_TIME);
-                    } else {
-                        telemetry.log().add("CASE RIGHT");
-                        m.run(1750, 0, 1);
-                        telemetry.log().add("Finished running, starting turn");
-
-                        m.hackTurn(-1);
-                        m.setRotationTarget(redTurn);
-//                        m.turnToTarget();
-//                        m.setRotationTarget(-90-135 * sideModifier);
-//                        m.turnToTarget();
-                    }
+                    balanceToColumn(FAR_OFFSET);
                     break;
                 case UNKNOWN:
-                    telemetry.log().add("CASE UNKNOWN, GOING CENTER");
-                    m.run(2600, 0, 1);
-                    telemetry.log().add("Finished running, starting turn");
-                    m.setRotationTarget(-90 * sideModifier);
-                    m.turnToTarget();
+                    balanceToColumn(unknownDefault);
                     break;
             }
-        }
-        if(startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            m.run(2200, 0, 1);
         } else {
-//            m.setTweenTime(0);
-//            moveVec.SetComponents(0, 1);
-//            m.setDirectionVector(moveVec);
-//            m.run(300, 0, 1);
-//            m.setTweenTime(TWEEN_TIME);
+            switch (mark) {
+                case LEFT:
+                    balanceToColumn(FAR_OFFSET);
+                    break;
+                case CENTER:
+                    balanceToColumn(CENTER_OFFSET);
+                    break;
+                case RIGHT:
+                    balanceToColumn(NEAR_OFFSET);
+                    break;
+                case UNKNOWN:
+                    balanceToColumn(unknownDefault);
+                    break;
+            }
         }
     }
 
-    private void safetyPush() {
-        depositBlock();
-
-//        m.run(1000, 0, 1);
-//        moveVec.SetComponents(0, -1);
-//        m.setDirectionVector(moveVec);
-//        m.run(1000, 0, 1);
-//        depositBlock();
-//        moveVec.SetComponents(0, 1);
-//        m.setDirectionVector(moveVec);
-//        m.run(TWEEN_TIME, 0, 1);
+    private void balanceToColumn(long columnOffset) {
+        m.run(CENTER_MOVE_TIME + columnOffset, 0, 1);
+        telemetry.log().add("Finished running, starting turn");
+        m.setRotationTarget(90 * sideModifier);
+        m.turnToTarget();
     }
 
     private enum StartPosition {
