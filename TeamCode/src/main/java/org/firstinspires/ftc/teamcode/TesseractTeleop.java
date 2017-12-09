@@ -29,9 +29,9 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -49,7 +49,11 @@ public class TesseractTeleop extends OpMode {
     private Servo lFlip;
     private Servo rFlip;
 
-    private Servo magic;
+    private Servo glyphFlipperRight;
+    private Servo glyphFlipperLeft;
+    private Servo armServo;
+    private Servo clawServo;
+    private Servo armExtensionServo;
 
     @Override
     public void init() {
@@ -62,8 +66,19 @@ public class TesseractTeleop extends OpMode {
 //        rExtender = hardwareMap.servo.get("rExtender");
 
 
-        magic = hardwareMap.servo.get("magic");
-        magic.setPosition(ServoValue.MAGIC_IN);
+        glyphFlipperRight = hardwareMap.servo.get("flipperRight");
+        glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+
+        glyphFlipperLeft = hardwareMap.servo.get("flipperLeft");
+        glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+
+
+        armServo = hardwareMap.servo.get("armServo");
+        armServo.setPosition(ServoValue.ARM_SERVO_IN);
+        clawServo = hardwareMap.servo.get("clawServo");
+        clawServo.setPosition(ServoValue.CLAW_SERVO_IN);
+
+        armExtensionServo = hardwareMap.servo.get("armExtension");
 
         lFlip = hardwareMap.servo.get("lFlip");
         rFlip = hardwareMap.servo.get("rFlip");
@@ -95,7 +110,12 @@ public class TesseractTeleop extends OpMode {
         m.addJoystickRotation(gamepad1.left_stick_x);
         m.setMotorPowers();
 //        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
+
         liftControl(gamepad2);
+        armServoControl(gamepad2);
+        clawServoControl(gamepad2);
+        armExtensionControl(gamepad2);
+
         intakeControl(gamepad1);
         scoreControl(gamepad1);
     }
@@ -144,15 +164,45 @@ public class TesseractTeleop extends OpMode {
         }
     }
 
+    // removed "staged" state
     private void scoreControl(Gamepad pad) {
         if (pad.y) {
-            magic.setPosition(ServoValue.MAGIC_IN);
-        }
-        if(pad.x) {
-            magic.setPosition(ServoValue.MAGIC_STAGED);
+            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         }
         if(pad.a) {
-            magic.setPosition(ServoValue.MAGIC_DEPOLYED);
+            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
+            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
         }
+    }
+
+
+    // Uses A (inc), B (dec)
+    private static final double SERVO_STEP_AMNT = 0.1f;
+    private void armServoControl(Gamepad pad) {
+        if(pad.a || pad.b ) {
+            armServo.setPosition(armServo.getPosition() + ((pad.a) ? SERVO_STEP_AMNT : -SERVO_STEP_AMNT));
+        }
+    }
+
+    // Uses X (inc), Y (dec)
+    private void clawServoControl(Gamepad pad) {
+        if(pad.x || pad.y ) {
+            clawServo.setPosition(clawServo.getPosition() + ((pad.x) ? SERVO_STEP_AMNT : -SERVO_STEP_AMNT));
+        }
+    }
+
+    // Uses right joystick
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01;
+    private void armExtensionControl(Gamepad pad) {
+
+        if( Math.abs(pad.right_stick_y) > CONTINUOUS_SERVO_JOYSTICK_THRESH)
+        {
+            armExtensionServo.setPosition( armExtensionServo.getPosition() + (Math.signum(pad.right_stick_y) * (0.1)));
+        } else {
+            armExtensionServo.setPosition(armExtensionServo.getPosition());
+        }
+
+        telemetry.addData("Arm servo pos", armExtensionServo.getPosition());
     }
 }

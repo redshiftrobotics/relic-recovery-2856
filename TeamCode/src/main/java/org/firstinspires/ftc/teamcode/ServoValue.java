@@ -17,9 +17,13 @@ public class ServoValue {
 
     public static float EXTENSION_LENGTH = 0.85f;
 
-    public static float MAGIC_IN = .95f;
-    public static float MAGIC_STAGED = 0f;
-    public static float MAGIC_DEPOLYED = .2f;
 
+    public static float ARM_SERVO_IN = 0f;
+    public static float CLAW_SERVO_IN = 0f;
 
+    public static float FLIPPER_RIGHT_UP = 0.625f;
+    public static float FLIPPER_LEFT_UP = 0.200f;
+
+    public static float FLIPPER_RIGHT_DOWN = 0.000f;
+    public static float FLIPPER_LEFT_DOWN = 0.850f;
 }
