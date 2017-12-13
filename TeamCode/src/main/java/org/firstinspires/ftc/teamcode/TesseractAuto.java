@@ -82,7 +82,7 @@ public class TesseractAuto extends LinearOpMode {
         rTentacle = hardwareMap.servo.get("rTentacle");
         lTentacle = hardwareMap.servo.get("lTentacle");
 
-        hardwareMap.servo.get("magic").setPosition(ServoValue.MAGIC_IN);
+//        hardwareMap.servo.get("magic").setPosition(ServoValue.MAGIC_IN);
 
         // Initialize mechanum chassis.
         m = new MechanumChassis(

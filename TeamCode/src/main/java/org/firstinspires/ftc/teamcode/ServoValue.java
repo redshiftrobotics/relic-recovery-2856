@@ -16,16 +16,15 @@ public class ServoValue {
     public static float RIGHT_FLIP_DOWN = 0.05f;
 
     public static float EXTENSION_LENGTH = 0.85f;
-
-
+    
     public static float RELIC_ARM_EXTENSION_IN = 0f;
     public static float RELIC_ARM_EXTENSION_OUT = 0f;
 
-    public static float RELIC_ARM_IN = 0f;
-    public static float RELIC_ARM_OUT = 0f;
+    public static float RELIC_ARM_IN = 1f;
+    public static float RELIC_ARM_OUT = .56f;
 
-    public static float RELIC_CLAW_IN = 0f;
-    public static float RELIC_CLAW_OUT = 0f;
+    public static float RELIC_CLAW_IN = .5f;
+    public static float RELIC_CLAW_OUT = .9f;
 
     public static float FLIPPER_RIGHT_UP = 0.625f;
     public static float FLIPPER_LEFT_UP = 0.200f;

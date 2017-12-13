@@ -124,8 +124,6 @@ public class TesseractTeleop extends OpMode {
      */
     private void liftControl(Gamepad pad) {
 
-
-
         // HACK TO GIVE TURNER FLIP
         if(pad.dpad_down) {
             lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);

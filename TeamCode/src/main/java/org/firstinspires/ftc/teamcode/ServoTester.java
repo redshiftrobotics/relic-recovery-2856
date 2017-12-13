@@ -17,10 +17,10 @@ public class ServoTester extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
-        float lv = 0f;
-        float rv = 0f;
-        Servo leftServo = hardwareMap.servo.get("magic");
-        Servo rightServo = hardwareMap.servo.get("lExtender");
+        float lv = .5f;
+        float rv = .8f;
+        Servo leftServo = hardwareMap.servo.get("clawServo");
+        Servo rightServo = hardwareMap.servo.get("armServo");
         waitForStart();
 
         while(opModeIsActive()) {
@@ -28,16 +28,16 @@ public class ServoTester extends LinearOpMode {
             telemetry.addData("rv", rv);
             telemetry.update();
             if (gamepad1.a) {
-                rv += 0.1f;
+                rv += 0.01f;
                 sleep(500);
             } else if (gamepad1.b) {
-                rv -= 0.1f;
+                rv -= 0.01f;
                 sleep(500);
             } else if (gamepad1.x) {
-                lv += 0.1f;
+                lv += 0.01f;
                 sleep(500);
             } else if (gamepad1.y) {
-                lv -= 0.1f;
+                lv -= 0.01f;
                 sleep(500);
             }
             leftServo.setPosition(lv);
