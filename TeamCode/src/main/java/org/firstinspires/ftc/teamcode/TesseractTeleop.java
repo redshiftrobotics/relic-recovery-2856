@@ -74,9 +74,9 @@ public class TesseractTeleop extends OpMode {
 
 
         armServo = hardwareMap.servo.get("armServo");
-        armServo.setPosition(ServoValue.ARM_SERVO_IN);
+        armServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
         clawServo = hardwareMap.servo.get("clawServo");
-        clawServo.setPosition(ServoValue.CLAW_SERVO_IN);
+        clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
 
         armExtensionServo = hardwareMap.servo.get("armExtension");
 
@@ -112,9 +112,7 @@ public class TesseractTeleop extends OpMode {
 //        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
 
         liftControl(gamepad2);
-        armServoControl(gamepad2);
-        clawServoControl(gamepad2);
-        armExtensionControl(gamepad2);
+        relicControl(gamepad2);
 
         intakeControl(gamepad1);
         scoreControl(gamepad1);
@@ -180,29 +178,31 @@ public class TesseractTeleop extends OpMode {
     // Uses A (inc), B (dec)
     private static final double SERVO_STEP_AMNT = 0.1f;
     private void armServoControl(Gamepad pad) {
-        if(pad.a || pad.b ) {
-            armServo.setPosition(armServo.getPosition() + ((pad.a) ? SERVO_STEP_AMNT : -SERVO_STEP_AMNT));
+        if( pad.a || pad.b ) {
+            armServo.setPosition( (pad.a) ? ServoValue.RELIC_ARM_EXTENSION_IN : ServoValue.RELIC_ARM_EXTENSION_OUT );
         }
     }
 
     // Uses X (inc), Y (dec)
     private void clawServoControl(Gamepad pad) {
         if(pad.x || pad.y ) {
-            clawServo.setPosition(clawServo.getPosition() + ((pad.x) ? SERVO_STEP_AMNT : -SERVO_STEP_AMNT));
+            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_IN : ServoValue.RELIC_CLAW_OUT );
         }
     }
 
     // Uses right joystick
-    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01;
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
 
         if( Math.abs(pad.right_stick_y) > CONTINUOUS_SERVO_JOYSTICK_THRESH)
         {
-            armExtensionServo.setPosition( armExtensionServo.getPosition() + (Math.signum(pad.right_stick_y) * (0.1)));
-        } else {
-            armExtensionServo.setPosition(armExtensionServo.getPosition());
+            armExtensionServo.setPosition( Math.signum(pad.right_stick_y) == 1 ? ServoValue.RELIC_ARM_EXTENSION_OUT : ServoValue.RELIC_ARM_EXTENSION_IN );
         }
+    }
 
-        telemetry.addData("Arm servo pos", armExtensionServo.getPosition());
+    private void relicControl(Gamepad pad) {
+        armServoControl(pad);
+        clawServoControl(pad);
+        armExtensionControl(pad);
     }
 }
