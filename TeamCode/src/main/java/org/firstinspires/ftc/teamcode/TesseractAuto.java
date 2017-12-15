@@ -23,6 +23,14 @@ public class TesseractAuto extends LinearOpMode {
     DcMotor lLift;
     DcMotor rLift;
 
+    DcMotor lCollect;
+    DcMotor rCollect;
+
+
+    private Servo armServo;
+    private Servo clawServo;
+    private Servo armExtensionServo;
+
     private MechanumChassis m;
     private Vector2D moveVec;
 
@@ -59,9 +67,15 @@ public class TesseractAuto extends LinearOpMode {
 //        m.hackTurn(1);
 
         // Kick the jewel off.
-//        doJewel();
+        doJewel();
+
+
         navigateToColumn(mark);
         depositBlock();
+
+
+//        collectBlocks();
+//        depositBlock();
     }
 
     void initialize() {
@@ -70,8 +84,20 @@ public class TesseractAuto extends LinearOpMode {
         lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
 
+
+        armServo = hardwareMap.servo.get("armServo");
+        armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
+        clawServo = hardwareMap.servo.get("clawServo");
+        clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
+
+        armExtensionServo = hardwareMap.servo.get("armExtension");
+        armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
+
         lLift = hardwareMap.dcMotor.get("lBelting");
         rLift = hardwareMap.dcMotor.get("rBelting");
+
+        lCollect = hardwareMap.dcMotor.get("lCollect");
+        rCollect = hardwareMap.dcMotor.get("rCollect");
 
         // Initialize Vuforia
         telemetry.log().add("Initializing Vuforia...");
@@ -244,6 +270,28 @@ public class TesseractAuto extends LinearOpMode {
                     break;
             }
         }
+    }
+
+    private void collectBlocks() {
+        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+
+        rLift.setPower(1);
+        lLift.setPower(-1);
+        lCollect.setPower(.75);
+
+        m.powerConstant = 0.15f;
+        m.run(2500, 0, 1);
+
+        lCollect.setPower(.5);
+        rCollect.setPower(-.5);
+
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(2500, 0, 1);
     }
 
     private void balanceToColumn(long columnOffset) {

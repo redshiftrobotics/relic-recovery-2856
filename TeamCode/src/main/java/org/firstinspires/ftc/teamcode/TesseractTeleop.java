@@ -31,7 +31,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -55,6 +54,9 @@ public class TesseractTeleop extends OpMode {
     private Servo clawServo;
     private Servo armExtensionServo;
 
+    Servo lTentacle;
+    Servo rTentacle;
+
     @Override
     public void init() {
 
@@ -74,11 +76,12 @@ public class TesseractTeleop extends OpMode {
 
 
         armServo = hardwareMap.servo.get("armServo");
-        armServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
+        armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
         clawServo = hardwareMap.servo.get("clawServo");
         clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
 
         armExtensionServo = hardwareMap.servo.get("armExtension");
+        armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
 
         lFlip = hardwareMap.servo.get("lFlip");
         rFlip = hardwareMap.servo.get("rFlip");
@@ -88,8 +91,11 @@ public class TesseractTeleop extends OpMode {
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
 
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP);
+        lTentacle = hardwareMap.servo.get("lTentacle");
+        rTentacle = hardwareMap.servo.get("rTentacle");
+        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+
 
         // Initialize drive-train with appropriate motors and OpMode context.
         m = new MechanumChassis(
@@ -174,17 +180,16 @@ public class TesseractTeleop extends OpMode {
 
 
     // Uses A (inc), B (dec)
-    private static final double SERVO_STEP_AMNT = 0.1f;
     private void armServoControl(Gamepad pad) {
-        if( pad.a || pad.b ) {
-            armServo.setPosition( (pad.a) ? ServoValue.RELIC_ARM_EXTENSION_IN : ServoValue.RELIC_ARM_EXTENSION_OUT );
+        if( pad.y || pad.a ) {
+            armServo.setPosition( (pad.y) ? ServoValue.RELIC_ARM_IN: ServoValue.RELIC_ARM_OUT );
         }
     }
 
     // Uses X (inc), Y (dec)
     private void clawServoControl(Gamepad pad) {
-        if(pad.x || pad.y ) {
-            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_IN : ServoValue.RELIC_CLAW_OUT );
+        if(pad.x || pad.b ) {
+            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_OUT : ServoValue.RELIC_CLAW_IN );
         }
     }
 
@@ -192,10 +197,14 @@ public class TesseractTeleop extends OpMode {
     private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
 
-        if( Math.abs(pad.right_stick_y) > CONTINUOUS_SERVO_JOYSTICK_THRESH)
-        {
-            armExtensionServo.setPosition( Math.signum(pad.right_stick_y) == 1 ? ServoValue.RELIC_ARM_EXTENSION_OUT : ServoValue.RELIC_ARM_EXTENSION_IN );
+        if (pad.right_stick_y >= 0.05) {
+            armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
+            clawServo.setPosition(.7);
+        } else if (pad.right_stick_y <= -0.05) {
+            lTentacle.setPosition(ServoValue.RIGHT_TENTACLE_FOR_RELIC);
+            armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_OUT);
         }
+
     }
 
     private void relicControl(Gamepad pad) {

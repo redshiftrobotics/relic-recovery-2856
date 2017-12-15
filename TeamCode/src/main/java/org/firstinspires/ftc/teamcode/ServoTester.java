@@ -5,6 +5,7 @@ import android.widget.LinearLayout;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.Servo;
 
 /**
@@ -17,10 +18,10 @@ public class ServoTester extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
-        float lv = .5f;
+        float lv = 0f;
         float rv = .8f;
-        Servo leftServo = hardwareMap.servo.get("clawServo");
-        Servo rightServo = hardwareMap.servo.get("armServo");
+        Servo leftServo = hardwareMap.servo.get("armExtension");
+        Servo rightServo = hardwareMap.servo.get("rTentacle");
         waitForStart();
 
         while(opModeIsActive()) {
@@ -28,16 +29,16 @@ public class ServoTester extends LinearOpMode {
             telemetry.addData("rv", rv);
             telemetry.update();
             if (gamepad1.a) {
-                rv += 0.01f;
+                rv += 0.1f;
                 sleep(500);
             } else if (gamepad1.b) {
-                rv -= 0.01f;
+                rv -= 0.1f;
                 sleep(500);
             } else if (gamepad1.x) {
-                lv += 0.01f;
+                lv += 0.1f;
                 sleep(500);
             } else if (gamepad1.y) {
-                lv -= 0.01f;
+                lv -= 0.1f;
                 sleep(500);
             }
             leftServo.setPosition(lv);

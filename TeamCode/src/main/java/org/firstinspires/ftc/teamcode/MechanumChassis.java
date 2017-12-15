@@ -169,8 +169,8 @@ public class MechanumChassis {
                 context.telemetry.update();
             }
             m0.setPower(-0.25*direction);
-            m1.setPower(-0.25*direction);
-            m2.setPower(-0.25*direction);
+            m1.setPower(0.25*direction);
+            m2.setPower(0.25*direction);
             m3.setPower(-0.25*direction);
         }
         start = System.currentTimeMillis();
@@ -180,8 +180,8 @@ public class MechanumChassis {
                 context.telemetry.update();
             }
             m0.setPower(0.25*direction);
-            m1.setPower(0.25*direction);
-            m2.setPower(0.25*direction);
+            m1.setPower(-0.25*direction);
+            m2.setPower(-0.25*direction);
             m3.setPower(0.25*direction);
         }
         if (debugModeEnabled) {
