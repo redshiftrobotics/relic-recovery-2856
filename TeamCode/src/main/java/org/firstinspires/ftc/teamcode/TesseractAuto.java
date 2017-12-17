@@ -72,6 +72,8 @@ public class TesseractAuto extends LinearOpMode {
 
         navigateToColumn(mark);
         depositBlock();
+        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
 
 //        collectBlocks();

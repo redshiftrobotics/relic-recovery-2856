@@ -6,9 +6,9 @@ package org.firstinspires.ftc.teamcode;
 
 public class ServoValue {
     public static float RIGHT_TENTACLE_UP = .17f;
-    public static float RIGHT_TENTACLE_FOR_RELIC = .45f;
+    public static float LEFT_TENTACLE_FOR_RELIC = .45f;
     public static float RIGHT_TENTACLE_DOWN = .9f;
-    public static float LEFT_TENTACLE_UP = .52f;
+    public static float LEFT_TENTACLE_UP = .65f;
     public static float LEFT_TENTACLE_DOWN = 0f;
 
     public static float LEFT_FLIP_UP = .4f;

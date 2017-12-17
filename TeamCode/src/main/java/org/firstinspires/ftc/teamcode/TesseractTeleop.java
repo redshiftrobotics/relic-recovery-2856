@@ -181,8 +181,8 @@ public class TesseractTeleop extends OpMode {
 
     // Uses A (inc), B (dec)
     private void armServoControl(Gamepad pad) {
-        if( pad.y || pad.a ) {
-            armServo.setPosition( (pad.y) ? ServoValue.RELIC_ARM_IN: ServoValue.RELIC_ARM_OUT );
+        if( pad.left_stick_button || pad.a ) {
+            armServo.setPosition( (pad.left_stick_button) ? ServoValue.RELIC_ARM_IN: ServoValue.RELIC_ARM_OUT );
         }
     }
 
@@ -201,7 +201,7 @@ public class TesseractTeleop extends OpMode {
             armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
             clawServo.setPosition(.7);
         } else if (pad.right_stick_y <= -0.05) {
-            lTentacle.setPosition(ServoValue.RIGHT_TENTACLE_FOR_RELIC);
+            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
             armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_OUT);
         }
 
