@@ -173,7 +173,12 @@ public class MechanumChassis {
             m2.setPower(0.25*direction);
             m3.setPower(-0.25*direction);
         }
-        start = System.currentTimeMillis();
+        stopMotors();
+    }
+
+    public void jewelBack(int direction) {
+        long start = System.currentTimeMillis();
+        long jewelKickTurnTime = 700;
         while (start + jewelKickTurnTime > System.currentTimeMillis() && context.opModeIsActive()) {
             if (debugModeEnabled) {
                 context.telemetry.addData("jewelKick", "Kick running");

@@ -218,14 +218,20 @@ public class TesseractAuto extends LinearOpMode {
         if(js.red() > js.blue()) {
             telemetry.log().add("JEWEL SENSOR SAW:::: RED");
             m.jewelKick(-1);
+            // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
+            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+            rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+            sleep(500);
+            m.jewelBack(-1);
         } else {
             telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
             m.jewelKick(1);
+            // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
+            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+            rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+            sleep(500);
+            m.jewelBack(1);
         }
-        // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
-        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
-
         // Return to home heading after jewel kick.
 //        m.setRotationTarget(0);
 //        m.turnToTarget();

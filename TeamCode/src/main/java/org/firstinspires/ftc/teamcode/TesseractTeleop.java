@@ -57,6 +57,8 @@ public class TesseractTeleop extends OpMode {
     Servo lTentacle;
     Servo rTentacle;
 
+    private Debouncer flipBounce;
+
     @Override
     public void init() {
 
@@ -74,6 +76,7 @@ public class TesseractTeleop extends OpMode {
         glyphFlipperLeft = hardwareMap.servo.get("flipperLeft");
         glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
 
+        flipBounce = new Debouncer();
 
         armServo = hardwareMap.servo.get("armServo");
         armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
@@ -160,7 +163,7 @@ public class TesseractTeleop extends OpMode {
         rCollect.setPower(-pad.right_trigger);
         lCollect.setPower(pad.left_trigger);
 
-        if (pad.right_bumper || pad.left_bumper) {
+        if (pad.left_bumper) {
             rCollect.setPower(0.8);
             lCollect.setPower(-0.8); // out
         }
@@ -168,13 +171,13 @@ public class TesseractTeleop extends OpMode {
 
     // removed "staged" state
     private void scoreControl(Gamepad pad) {
-        if (pad.y) {
-            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
-            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
-        }
-        if(pad.a) {
+        if (flipBounce.debounce(pad.right_bumper)) {
             glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
             glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
+        } else {
+
+            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         }
     }
 
@@ -211,5 +214,8 @@ public class TesseractTeleop extends OpMode {
         armServoControl(pad);
         clawServoControl(pad);
         armExtensionControl(pad);
+    }
+
+    private void debounce() {
     }
 }
