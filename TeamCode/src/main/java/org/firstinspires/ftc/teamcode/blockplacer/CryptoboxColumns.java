@@ -6,10 +6,10 @@ package org.firstinspires.ftc.teamcode.blockplacer;
  */
 
 public class CryptoboxColumns {
+    static final int INVALID = -1;
     static final int LEFT = 0;
     static final int MIDDLE = 1;
     static final int RIGHT = 2;
-    static final int INVALID = 3;
 
     private CryptoboxColumns(){}
 }

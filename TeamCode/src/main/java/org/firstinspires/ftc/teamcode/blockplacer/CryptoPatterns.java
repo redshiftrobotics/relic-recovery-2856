@@ -9,25 +9,27 @@ import static org.firstinspires.ftc.teamcode.blockplacer.BlockColors.GREY;
  */
 
 class CryptoPatterns {
+
+    // Note these patterns are upsidedown visually because our computers are australian
     static final int[][] FROG = new int[][] {
-            { GREY, BROWN, GREY },
             { BROWN, GREY, BROWN },
             { GREY, BROWN, GREY },
-            { BROWN, GREY, BROWN }
+            { BROWN, GREY, BROWN },
+            { GREY, BROWN, GREY }
     };
 
     static final int[][] BIRD = new int[][] {
             { GREY, BROWN, GREY },
             { BROWN, GREY, BROWN },
             { BROWN, GREY, BROWN },
-            { GREY, BROWN, GREY }
+            { GREY, BROWN, GREY },
     };
 
     static final int[][] SNAKE = new int[][] {
-            { BROWN, GREY, GREY },
-            { BROWN, BROWN, GREY },
+            { GREY, GREY, BROWN },
             { GREY, BROWN, BROWN },
-            { GREY, GREY, BROWN }
+            { BROWN, BROWN, GREY },
+            { BROWN, GREY, GREY }
     };
 
     private CryptoPatterns(){}

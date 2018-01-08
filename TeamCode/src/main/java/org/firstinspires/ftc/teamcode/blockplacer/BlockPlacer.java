@@ -1,13 +1,12 @@
 package org.firstinspires.ftc.teamcode.blockplacer;
 
-import android.util.Log;
-
 import com.sun.tools.javac.util.Pair;
+
+import org.firstinspires.ftc.teamcode.BuildConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoPatterns.*;
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns.*;
@@ -38,7 +37,7 @@ public class BlockPlacer {
      */
     private static final int PREFER_COLUMNS = 0;
     private static final int PREFER_ROWS = 1;
-    private int PlacementMethodPreference = PREFER_COLUMNS;
+    private int PlacementMethodPreference = PREFER_ROWS;
     public void setPlacementMethodPreference( int iPreference ) { PlacementMethodPreference = iPreference; }
 
     /**
@@ -56,9 +55,12 @@ public class BlockPlacer {
      */
     public int getNextBlockColumn( int nextBlockColor )
     {
-        int nextBlockColumn;
+        int nextBlockColumn = CryptoboxColumns.INVALID;
+        int nextBlockRow = -1;
 
         int[] viableColumns = getViableColumns(nextBlockColor);
+        int[][] sortedCryptoboxState = sortCryptoboxState( CryptoboxState );
+        ArrayList<Integer> nextBlockColumnCanidates = new ArrayList<>();
 
         if( viableColumns.length == 0 )
         {
@@ -80,11 +82,72 @@ public class BlockPlacer {
             case PREFER_ROWS:
             default:
                 // Loop through rows, find empty space.
-                for(Pair< Pair< Integer, Integer >, Integer > curBlock : CryptoboxState)
+                for( int iIndexRow = 0; iIndexRow < sortedCryptoboxState.length; iIndexRow++ )
                 {
-                    if( curBlock.snd == BlockColors.INVALID )
+                    ArrayList<Integer> emptySpaceInRow = new ArrayList<>();
+
+                    for( int iIndexColumn = 0; iIndexColumn < sortedCryptoboxState[iIndexRow].length; iIndexColumn++ )
+                    {
+                        if( sortedCryptoboxState[iIndexRow][iIndexColumn] == BlockColors.INVALID )
+                        {
+                            emptySpaceInRow.add( iIndexColumn );
+                        }
+                    }
+
+//                    for( int[] a : sortedCryptoboxState)
+//                    {
+//                        System.out.print( Arrays.toString(a) );
+//                    }
+//                    System.out.println(" " + iIndexRow );
+
+                    // Find matching elements
+                    if( emptySpaceInRow.size() != 0 )
+                    {
+                        for( int iColumn : emptySpaceInRow )
+                        {
+                            for( int iViableColumn : viableColumns )
+                            {
+                                if( iColumn == iViableColumn )
+                                {
+                                    nextBlockColumnCanidates.add( iColumn );
+                                }
+                            }
+                        }
+
+                        // We have found an incomplete row. No need to keep searching
+                        nextBlockRow = iIndexRow;
+                        break;
+                    }
+                }
+
+                if( nextBlockColumnCanidates.size() != 0 )
+                {
+                    if( nextBlockColumnCanidates.size() == 1 )
+                    {
+                        nextBlockColumn = nextBlockColumnCanidates.get(0);
+                        break;
+                    }
+
+                    // Use the prefered column if possible
+                    columnloop:
+                    for( int iColumnPreference : CryptoColumnPreference )
+                    {
+                        for( int iColumn : nextBlockColumnCanidates )
+                        {
+                            if( iColumnPreference == iColumn )
+                            {
+                                nextBlockColumn = iColumn;
+                                break columnloop;
+                            }
+                        }
+                    }
                 }
                 break;
+        }
+
+        if( nextBlockColumn != CryptoboxColumns.INVALID && nextBlockRow != -1 )
+        {
+            CryptoboxState.add( new Pair<>( new Pair<>( nextBlockColumn, nextBlockRow ), nextBlockColor));
         }
 
         return nextBlockColumn;
@@ -115,17 +178,22 @@ public class BlockPlacer {
             }
         }
 
-        ArrayList<Integer> ViableColumns = new ArrayList<Integer>(){{
+        ArrayList<Integer> ViableColumns = new ArrayList<Integer>() {{
             add(LEFT);
             add(MIDDLE);
             add(RIGHT);
         }};
 
+        // We no longer need null elements in ColumnsTopmostBlocks
+        //ColumnsTopmostBlocks.removeAll( Collections.<Pair<Pair<Integer, Integer>, Integer>>singleton( null ) );
+
         // Determine viable columns
-        for( Pair< Pair< Integer, Integer >, Integer > topmostBlock : ColumnsTopmostBlocks )
+        for( int iColumn = 0; iColumn < ColumnsTopmostBlocks.size(); iColumn++ )
         {
+            Pair<Pair<Integer, Integer>, Integer> topmostBlock = ColumnsTopmostBlocks.get(iColumn);
+
             // Remove column if full ( Having 4 blocks )
-            if( topmostBlock.fst.snd >= 3 ) // Row
+            if( topmostBlock != null && topmostBlock.fst.snd >= 3 ) // Row
             {
                 ViableColumns.remove( topmostBlock.fst.fst ); // Column
             }
@@ -137,10 +205,14 @@ public class BlockPlacer {
             }
 
             // Remove column if a block placed in it would not lead to a cipher
-            if( this.CryptoPatterns[CurrentPattern][topmostBlock.fst.snd + 1][topmostBlock.fst.fst] != blockColor )
+            int targetRow = topmostBlock == null ? 0 : topmostBlock.fst.snd + 1;
+
+            if( this.CryptoPatterns[CurrentPattern][targetRow][iColumn] != blockColor )
             {
-                ViableColumns.remove( topmostBlock.fst.fst );
+                // have to cast to Integer so that AL.remove removes the matching object not the object at the index.
+                ViableColumns.remove( Integer.valueOf(iColumn) );
             }
+
         }
 
         return ArraylistToIntArray( ViableColumns );
@@ -151,6 +223,7 @@ public class BlockPlacer {
      */
     public BlockPlacer( int firstBlockColumn, int firstBlockColor )
     {
+        CryptoboxState = new ArrayList<>();
         CryptoboxState.add( new Pair<>( new Pair<>( firstBlockColumn, 0 ), firstBlockColor ));
     }
 
@@ -176,13 +249,15 @@ public class BlockPlacer {
     private int[][] sortCryptoboxState( ArrayList< Pair< Pair< Integer, Integer >, Integer > > cryptoboxState )
     {
         int[][] sortedCryptoboxState = new int[4][3]; // 4 rows, 3 columns
-        Arrays.fill(sortedCryptoboxState, BlockColors.INVALID);
+        int[] emptyRow = new int[3];
+        Arrays.fill(emptyRow, BlockColors.INVALID);
+        Arrays.fill(sortedCryptoboxState, emptyRow);
 
         for( Pair< Pair< Integer, Integer >, Integer > curBlock : cryptoboxState )
         {
             sortedCryptoboxState[curBlock.fst.snd][curBlock.fst.fst] = curBlock.snd;
         }
-
+        
         return sortedCryptoboxState;
     }
 }
