@@ -7,10 +7,17 @@ import junit.framework.TestCase;
  */
 public class BlockPlacerTest extends TestCase {
     public void testGetNextBlockColumn() throws Exception {
+
+        // Test basics
         BlockPlacer bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
         assertEquals( CryptoboxColumns.RIGHT,   bop.getNextBlockColumn( BlockColors.BROWN ));
         assertEquals( CryptoboxColumns.LEFT, bop.getNextBlockColumn( BlockColors.BROWN ));
         assertEquals( CryptoboxColumns.RIGHT,  bop.getNextBlockColumn( BlockColors.GREY  ));
         assertEquals( CryptoboxColumns.MIDDLE,  bop.getNextBlockColumn( BlockColors.BROWN  ));
+
+        // Test switching patterns (Frog -> Snake)
+        bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
+        assertEquals( CryptoboxColumns.LEFT, bop.getNextBlockColumn(BlockColors.GREY) );
+        assertEquals( CryptoPatterns.SNAKE, bop.getPattern());
     }
 }
