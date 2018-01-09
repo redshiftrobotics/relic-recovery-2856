@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.blockplacer;
 
+import com.google.blocks.ftcrobotcontroller.runtime.Block;
+import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Pair;
 
 import org.firstinspires.ftc.teamcode.BuildConfig;
@@ -64,15 +66,17 @@ public class BlockPlacer {
 
         if( viableColumns.length == 0 )
         {
-            // If there are no viable columns, try using a different cipher.
-            if( CurrentPattern == CryptoPatterns.length )
+            // Attempt to use a different pattern
+            while(true)
             {
-                // This block cannot be used to complete any cipher.
-                return CryptoboxColumns.INVALID;
-            }
+                CurrentPattern++;
 
-            CurrentPattern++;
-            return getNextBlockColumn( nextBlockColor );
+                if( CurrentPattern >= CryptoPatterns.length )
+                    return CryptoboxColumns.INVALID;
+
+                if( doesCryptoboxStateFitPattern() )
+                    return getNextBlockColumn( nextBlockColor );
+            }
         }
 
         switch ( PlacementMethodPreference )
@@ -94,12 +98,6 @@ public class BlockPlacer {
                         }
                     }
 
-//                    for( int[] a : sortedCryptoboxState)
-//                    {
-//                        System.out.print( Arrays.toString(a) );
-//                    }
-//                    System.out.println(" " + iIndexRow );
-
                     // Find matching elements
                     if( emptySpaceInRow.size() != 0 )
                     {
@@ -120,28 +118,31 @@ public class BlockPlacer {
                     }
                 }
 
-                if( nextBlockColumnCanidates.size() != 0 )
+                if( nextBlockColumnCanidates.size() == 0 )
                 {
-                    if( nextBlockColumnCanidates.size() == 1 )
-                    {
-                        nextBlockColumn = nextBlockColumnCanidates.get(0);
-                        break;
-                    }
+                    nextBlockColumnCanidates = IntArrayToArrayList( viableColumns );
+                }
 
-                    // Use the prefered column if possible
-                    columnloop:
-                    for( int iColumnPreference : CryptoColumnPreference )
+                if( nextBlockColumnCanidates.size() == 1 )
+                {
+                    nextBlockColumn = nextBlockColumnCanidates.get(0);
+                    break;
+                }
+
+                // Use the prefered column if possible
+                columnloop:
+                for( int iColumnPreference : CryptoColumnPreference )
+                {
+                    for( int iColumn : nextBlockColumnCanidates )
                     {
-                        for( int iColumn : nextBlockColumnCanidates )
+                        if( iColumnPreference == iColumn )
                         {
-                            if( iColumnPreference == iColumn )
-                            {
-                                nextBlockColumn = iColumn;
-                                break columnloop;
-                            }
+                            nextBlockColumn = iColumn;
+                            break columnloop;
                         }
                     }
                 }
+
                 break;
         }
 
@@ -246,18 +247,42 @@ public class BlockPlacer {
         return v;
     }
 
+    private ArrayList<Integer> IntArrayToArrayList(final int[] intArray )
+    {
+        return new ArrayList<Integer>() {{ for (int i : intArray) add(i); }};
+    }
+
     private int[][] sortCryptoboxState( ArrayList< Pair< Pair< Integer, Integer >, Integer > > cryptoboxState )
     {
         int[][] sortedCryptoboxState = new int[4][3]; // 4 rows, 3 columns
-        int[] emptyRow = new int[3];
-        Arrays.fill(emptyRow, BlockColors.INVALID);
-        Arrays.fill(sortedCryptoboxState, emptyRow);
+
+        for( int[] a : sortedCryptoboxState )
+            Arrays.fill(a, BlockColors.INVALID);
 
         for( Pair< Pair< Integer, Integer >, Integer > curBlock : cryptoboxState )
         {
             sortedCryptoboxState[curBlock.fst.snd][curBlock.fst.fst] = curBlock.snd;
         }
-        
+
         return sortedCryptoboxState;
+    }
+
+    private boolean doesCryptoboxStateFitPattern()
+    {
+        int[][] sortedCryptoboxState = sortCryptoboxState( CryptoboxState );
+
+        for( int iRowIndex = 0; iRowIndex < sortedCryptoboxState.length; iRowIndex++ )
+        {
+            for( int iColumnIndex = 0; iColumnIndex < sortedCryptoboxState[iRowIndex].length; iColumnIndex++ )
+            {
+                int cryptoboxBlockColorAtPosition = sortedCryptoboxState[iRowIndex][iColumnIndex];
+                if( cryptoboxBlockColorAtPosition != CryptoPatterns[CurrentPattern][iRowIndex][iColumnIndex] && cryptoboxBlockColorAtPosition != BlockColors.INVALID )
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
