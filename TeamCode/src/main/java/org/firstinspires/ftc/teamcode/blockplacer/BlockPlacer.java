@@ -39,11 +39,8 @@ public class BlockPlacer {
 
     /**
      * Data about blocks we have already placed.
-     * CryptoboxState may be tricky to understand. Its an arraylist where each element has a column/row
-     * as a pair and a color all bundled into a pair. Oof, braintwister.
-     *  ((Column, Row), Color). With the bottom row being 0 and top row being 3.
      */
-    ArrayList< Pair< Pair< Integer, Integer >, Integer > > CryptoboxState;
+    ArrayList< Block > CryptoboxState;
 
     /**
      * The "thinking" function of the AI. Call this when a block has been scanned to determine drive position.
@@ -143,7 +140,7 @@ public class BlockPlacer {
 
         if( nextBlockColumn != CryptoboxColumns.INVALID && nextBlockRow != -1 )
         {
-            CryptoboxState.add( new Pair<>( new Pair<>( nextBlockColumn, nextBlockRow ), nextBlockColor));
+            CryptoboxState.add( new Block( nextBlockColumn, nextBlockRow, nextBlockColor ) );
         }
 
         return nextBlockColumn;
@@ -156,21 +153,18 @@ public class BlockPlacer {
     {
         // Another one of the reasons I like C more than java... TYPEDEFS!
         // Implicit indexing based on the order of CryptoboxColumns. Cant really think of a more elegant way to do this. Sorry DavidB.
-        ArrayList< Pair< Pair< Integer, Integer >, Integer > > ColumnsTopmostBlocks = new ArrayList< Pair< Pair< Integer, Integer >, Integer > >(){{
+        ArrayList< Block > ColumnsTopmostBlocks = new ArrayList< Block >(){{
             add(null); add(null); add(null);
         }};
 
         // Loop through placed blocks to find topmost blocks.
-        for( Pair< Pair< Integer, Integer >, Integer > curBlock : CryptoboxState )
+        for( Block curBlock : CryptoboxState )
         {
-            Integer curBlockColumn = curBlock.fst.fst;
-            Integer curBlockRow = curBlock.fst.snd;
+            Block curBlockColumnTopmostBlock = ColumnsTopmostBlocks.get(curBlock.column);
 
-            Pair< Pair< Integer, Integer >, Integer > curBlockColumnTopmostBlock = ColumnsTopmostBlocks.get(curBlockColumn);
-
-            if( curBlockColumnTopmostBlock == null || curBlockRow > curBlockColumnTopmostBlock.fst.snd )
+            if( curBlockColumnTopmostBlock == null || curBlock.row > curBlockColumnTopmostBlock.row )
             {
-                ColumnsTopmostBlocks.set( curBlockColumn, curBlock );
+                ColumnsTopmostBlocks.set( curBlock.column, curBlock );
             }
         }
 
@@ -186,12 +180,12 @@ public class BlockPlacer {
         // Determine viable columns
         for( int iColumn = 0; iColumn < ColumnsTopmostBlocks.size(); iColumn++ )
         {
-            Pair<Pair<Integer, Integer>, Integer> topmostBlock = ColumnsTopmostBlocks.get(iColumn);
+            Block topmostBlock = ColumnsTopmostBlocks.get(iColumn);
 
             // Remove column if full ( Having 4 blocks )
-            if( topmostBlock != null && topmostBlock.fst.snd >= 3 ) // Row
+            if( topmostBlock != null && topmostBlock.row >= 3 )
             {
-                ViableColumns.remove( topmostBlock.fst.fst ); // Column
+                ViableColumns.remove( topmostBlock.column );
             }
 
             // If there is no space in the cryptobox return early
@@ -201,7 +195,7 @@ public class BlockPlacer {
             }
 
             // Remove column if a block placed in it would not lead to a cipher
-            int targetRow = topmostBlock == null ? 0 : topmostBlock.fst.snd + 1;
+            int targetRow = topmostBlock == null ? 0 : topmostBlock.row + 1;
 
             if( this.CryptoPatterns[CurrentPattern][targetRow][iColumn] != blockColor )
             {
@@ -220,7 +214,7 @@ public class BlockPlacer {
     public BlockPlacer( int firstBlockColumn, int firstBlockColor )
     {
         CryptoboxState = new ArrayList<>();
-        CryptoboxState.add( new Pair<>( new Pair<>( firstBlockColumn, 0 ), firstBlockColor ));
+        CryptoboxState.add( new Block(firstBlockColumn, 0 , firstBlockColor ));
     }
 
     /**
@@ -247,16 +241,16 @@ public class BlockPlacer {
         return new ArrayList<Integer>() {{ for (int i : intArray) add(i); }};
     }
 
-    private int[][] sortCryptoboxState( ArrayList< Pair< Pair< Integer, Integer >, Integer > > cryptoboxState )
+    private int[][] sortCryptoboxState( ArrayList< Block > cryptoboxState )
     {
         int[][] sortedCryptoboxState = new int[4][3]; // 4 rows, 3 columns
 
         for( int[] a : sortedCryptoboxState )
             Arrays.fill(a, BlockColors.INVALID);
 
-        for( Pair< Pair< Integer, Integer >, Integer > curBlock : cryptoboxState )
+        for( Block curBlock : cryptoboxState )
         {
-            sortedCryptoboxState[curBlock.fst.snd][curBlock.fst.fst] = curBlock.snd;
+            sortedCryptoboxState[curBlock.row][curBlock.column] = curBlock.color;
         }
 
         return sortedCryptoboxState;
