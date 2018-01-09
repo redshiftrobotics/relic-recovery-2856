@@ -1,14 +1,9 @@
 package org.firstinspires.ftc.teamcode.blockplacer;
 
-import com.google.blocks.ftcrobotcontroller.runtime.Block;
-import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Pair;
-
-import org.firstinspires.ftc.teamcode.BuildConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoPatterns.*;
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns.*;
