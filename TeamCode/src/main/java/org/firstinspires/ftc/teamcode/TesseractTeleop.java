@@ -29,7 +29,6 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -49,7 +48,16 @@ public class TesseractTeleop extends OpMode {
     private Servo lFlip;
     private Servo rFlip;
 
-    private Servo magic;
+    private Servo glyphFlipperRight;
+    private Servo glyphFlipperLeft;
+    private Servo armServo;
+    private Servo clawServo;
+    private Servo armExtensionServo;
+
+    Servo lTentacle;
+    Servo rTentacle;
+
+    private Debouncer flipBounce;
 
     @Override
     public void init() {
@@ -62,8 +70,21 @@ public class TesseractTeleop extends OpMode {
 //        rExtender = hardwareMap.servo.get("rExtender");
 
 
-        magic = hardwareMap.servo.get("magic");
-        magic.setPosition(ServoValue.MAGIC_IN);
+        glyphFlipperRight = hardwareMap.servo.get("flipperRight");
+        glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+
+        glyphFlipperLeft = hardwareMap.servo.get("flipperLeft");
+        glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+
+        flipBounce = new Debouncer();
+
+        armServo = hardwareMap.servo.get("armServo");
+        armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
+        clawServo = hardwareMap.servo.get("clawServo");
+        clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
+
+        armExtensionServo = hardwareMap.servo.get("armExtension");
+        armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
 
         lFlip = hardwareMap.servo.get("lFlip");
         rFlip = hardwareMap.servo.get("rFlip");
@@ -73,8 +94,11 @@ public class TesseractTeleop extends OpMode {
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
 
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP);
+        lTentacle = hardwareMap.servo.get("lTentacle");
+        rTentacle = hardwareMap.servo.get("rTentacle");
+        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+
 
         // Initialize drive-train with appropriate motors and OpMode context.
         m = new MechanumChassis(
@@ -95,7 +119,10 @@ public class TesseractTeleop extends OpMode {
         m.addJoystickRotation(gamepad1.left_stick_x);
         m.setMotorPowers();
 //        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
+
         liftControl(gamepad2);
+        relicControl(gamepad2);
+
         intakeControl(gamepad1);
         scoreControl(gamepad1);
     }
@@ -105,8 +132,6 @@ public class TesseractTeleop extends OpMode {
      * @param pad The joystick to put assign this control to.
      */
     private void liftControl(Gamepad pad) {
-
-
 
         // HACK TO GIVE TURNER FLIP
         if(pad.dpad_down) {
@@ -138,21 +163,59 @@ public class TesseractTeleop extends OpMode {
         rCollect.setPower(-pad.right_trigger);
         lCollect.setPower(pad.left_trigger);
 
-        if (pad.right_bumper || pad.left_bumper) {
+        if (pad.left_bumper) {
             rCollect.setPower(0.8);
             lCollect.setPower(-0.8); // out
         }
     }
 
+    // removed "staged" state
     private void scoreControl(Gamepad pad) {
-        if (pad.y) {
-            magic.setPosition(ServoValue.MAGIC_IN);
+        if (flipBounce.debounce(pad.right_bumper)) {
+            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
+            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
+        } else {
+
+            glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+            glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         }
-        if(pad.x) {
-            magic.setPosition(ServoValue.MAGIC_STAGED);
+    }
+
+
+    // Uses A (inc), B (dec)
+    private void armServoControl(Gamepad pad) {
+        if( pad.left_stick_button || pad.a ) {
+            armServo.setPosition( (pad.left_stick_button) ? ServoValue.RELIC_ARM_IN: ServoValue.RELIC_ARM_OUT );
         }
-        if(pad.a) {
-            magic.setPosition(ServoValue.MAGIC_DEPOLYED);
+    }
+
+    // Uses X (inc), Y (dec)
+    private void clawServoControl(Gamepad pad) {
+        if(pad.x || pad.b ) {
+            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_OUT : ServoValue.RELIC_CLAW_IN );
         }
+    }
+
+    // Uses right joystick
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01; // Needs to be calibrated (maybe)
+    private void armExtensionControl(Gamepad pad) {
+
+        if (pad.right_stick_y >= 0.05) {
+            armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
+            clawServo.setPosition(.7);
+        } else if (pad.right_stick_y <= -0.05) {
+            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
+            armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_OUT);
+        }
+
+    }
+
+    private void relicControl(Gamepad pad) {
+        armServoControl(pad);
+        clawServoControl(pad);
+        armExtensionControl(pad);
+    }
+
+    private void debounce() {
     }
 }

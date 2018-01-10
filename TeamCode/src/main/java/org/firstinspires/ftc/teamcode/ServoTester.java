@@ -5,6 +5,7 @@ import android.widget.LinearLayout;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.Servo;
 
 /**
@@ -18,9 +19,9 @@ public class ServoTester extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
 
         float lv = 0f;
-        float rv = 0f;
-        Servo leftServo = hardwareMap.servo.get("magic");
-        Servo rightServo = hardwareMap.servo.get("lExtender");
+        float rv = .8f;
+        Servo leftServo = hardwareMap.servo.get("lTentacle");
+        Servo rightServo = hardwareMap.servo.get("rTentacle");
         waitForStart();
 
         while(opModeIsActive()) {
