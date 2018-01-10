@@ -128,20 +128,22 @@ public class TesseractTeleop extends OpMode {
         Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
         m.setDirectionVector(v);
 
-
-
-        if(rotationLock.debounce(gamepad1.left_stick_button)) {
-            m.addJoystickRotation(gamepad1.left_stick_x);
-            m.setMotorPowers();
-        } else {
-            m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
-        }
+        driveTrainControl(gamepad1);
 
         liftControl(gamepad2);
         relicControl(gamepad2);
 
         intakeControl(gamepad1);
         scoreControl(gamepad1);
+    }
+
+    private void driveTrainControl(Gamepad pad) {
+        if(rotationLock.debounce(pad.left_stick_button)) {
+            m.addJoystickRotation(pad.left_stick_x);
+            m.setMotorPowers();
+        } else {
+            m.addTeleopIMUTarget(pad.left_stick_x, telemetry);
+        }
     }
 
     /***
