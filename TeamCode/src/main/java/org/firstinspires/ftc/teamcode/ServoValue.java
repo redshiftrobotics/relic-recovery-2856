@@ -33,4 +33,10 @@ public class ServoValue {
 
     public static float FLIPPER_RIGHT_DOWN = 0.000f;
     public static float FLIPPER_LEFT_DOWN = 0.850f;
+
+    public static float ALIGN_LEFT_UP = .3f;
+    public static float ALIGN_RIGHT_UP = .7f;
+
+    public static float ALIGN_LEFT_DOWN = .8f;
+    public static float ALIGN_RIGHT_DOWN = .2f;
 }
