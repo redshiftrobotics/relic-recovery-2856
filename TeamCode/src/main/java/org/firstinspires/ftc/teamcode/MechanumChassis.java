@@ -2,15 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
 /**
  * Created by matt on 9/16/17.
@@ -38,7 +35,7 @@ public class MechanumChassis {
     private DcMotor m3;
     private BNO055IMU imu;
 
-    private float imuInitOffset = -1.0f;
+    private float imuInitOffset = -9000;
 
     private float teleopHeading = 0;
 
@@ -49,7 +46,7 @@ public class MechanumChassis {
 
     private LinearOpMode context;
 
-    public float powerConstant = 0.9f;
+    public float powerConstant = 0.9f * 35/45; // multiplier for drive train change, addition for added time to overcome static friction with new drive-train
 
     MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, LinearOpMode context) {
         this.m0 = m0;
@@ -114,27 +111,20 @@ public class MechanumChassis {
     }
 
     public void setRotationTarget(float degrees) {
-        rotationTarget = degrees - imuInitOffset;
+        if(imuInitOffset == -9000 /* has not been set already */) {
+            imuInitOffset = getRotation();
+        }
+
+        rotationTarget = imuInitOffset - degrees;
     }
 
     public void turnToTarget() {
+        long start = System.currentTimeMillis();
+        long turnTimeout = 3000;
+        float P;
+        while(context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
 
-        if(imuInitOffset < 0 /* has not been set already */) {
-            imuInitOffset = getRotation();
-            rotationTarget = imuInitOffset - rotationTarget;
-        }
-
-        float P = 0;
-        float currentAngle;
-        while(context.opModeIsActive()) {
-            currentAngle = getRotation();
-            if (currentAngle + 360 - rotationTarget <= 180) {
-                P = (currentAngle -  rotationTarget + 360);
-            } else if (rotationTarget + 360 - currentAngle <= 180) {
-                P = (rotationTarget - currentAngle + 360) * -1;
-            } else if (currentAngle -  rotationTarget <= 180) {
-                P = (currentAngle -  rotationTarget);
-            }
+            P = getOffset(getRotation());
 
             if(Math.abs(P) < 0.07) {
                 break;
@@ -153,6 +143,17 @@ public class MechanumChassis {
             m3.setPower(P / 20);
         }
         stopMotors();
+    }
+
+    private float getOffset(float currentAngle) {
+        if (currentAngle + 360 - rotationTarget <= 180) {
+            return (currentAngle -  rotationTarget + 360);
+        } else if (rotationTarget + 360 - currentAngle <= 180) {
+            return (rotationTarget - currentAngle + 360) * -1;
+        } else if (currentAngle -  rotationTarget <= 180) {
+            return (currentAngle -  rotationTarget);
+        }
+        return 0;
     }
 
     /***
@@ -202,7 +203,7 @@ public class MechanumChassis {
         float elapsedTime;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             elapsedTime = System.currentTimeMillis() - start;
-            P = 0;//(getRotation() - rotationTarget) / 30;
+            P = getOffset(getRotation()) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
@@ -236,8 +237,8 @@ public class MechanumChassis {
 
     private void setMotorPowers(double power, float P) {
         m0.setPower(speed0 * power + P);
-        m1.setPower(speed1 * power + P);
-        m2.setPower(speed2 * power + P);
+        m1.setPower(speed1 * power - P);
+        m2.setPower(speed2 * power - P);
         m3.setPower(speed3 * power + P);
     }
 }

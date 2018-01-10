@@ -42,14 +42,18 @@ public class TesseractAuto extends LinearOpMode {
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
 
-    private static final long CENTER_MOVE_TIME = 2700;
+    private static final long CENTER_MOVE_TIME = 2850;
     private static final long FAR_OFFSET = 400;
     private static final long NEAR_OFFSET = -400;
     private static final long CENTER_OFFSET = 0;
 
+    private static final long A_FAR_OFFSET = 2400;
+    private static final long A_CENTER_OFFSET = 1800;
+    private static final long A_NEAR_OFFSET = 1250;
+
     private VuforiaHelper vHelper;
 
-    private StartPosition startPos = StartPosition.RED_B;
+    private StartPosition startPos = StartPosition.BLUE_B;
     private int sideModifier = 1;
 
     @Override
@@ -58,7 +62,6 @@ public class TesseractAuto extends LinearOpMode {
         configurationLoop();
         waitForStart();
 
-
         // Process the VuMark
         RelicRecoveryVuMark mark = vHelper.getVuMark();
         telemetry.log().add("DETECTED COLUMN: " + mark);
@@ -66,18 +69,24 @@ public class TesseractAuto extends LinearOpMode {
 //        m.hackTurn(-1);
 //        m.hackTurn(1);
 
+        m.setRotationTarget(0);
+
+
         // Kick the jewel off.
         doJewel();
 
-
+//        m.turnToTarget();
         navigateToColumn(mark);
+
+
+
         depositBlock();
         lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
-
-
-//        collectBlocks();
-//        depositBlock();
+        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
+            collectBlocks();
+            depositBlock();
+        }
     }
 
     void initialize() {
@@ -140,7 +149,7 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     void depositBlock() {
-        m.powerConstant = 0.5f;
+        m.powerConstant = 0.5f * 35/45;
         m.setTweenTime(0);
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
@@ -150,7 +159,7 @@ public class TesseractAuto extends LinearOpMode {
         // allow block to reach top before backing
         sleep(500);
 
-        m.powerConstant = 0.25f;
+        m.powerConstant = 0.25f * 35/45;
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
         m.run(1600, 0, 1);
@@ -159,7 +168,7 @@ public class TesseractAuto extends LinearOpMode {
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
         m.run(1000, 0, 1);
-        m.powerConstant = 0.9f;
+        m.powerConstant = 0.9f * 35/45;
         m.setTweenTime(TWEEN_TIME);
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
@@ -232,8 +241,9 @@ public class TesseractAuto extends LinearOpMode {
             sleep(500);
             m.jewelBack(1);
         }
+
         // Return to home heading after jewel kick.
-//        m.setRotationTarget(0);
+        m.setRotationTarget(0);
 //        m.turnToTarget();
 
         telemetry.log().add("FINISHED RESETTING TO HOME ROTATION");
@@ -247,7 +257,9 @@ public class TesseractAuto extends LinearOpMode {
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
 
-        if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
+        // B POSITION
+
+        if (startPos == StartPosition.BLUE_B) {
             switch (mark) {
                 case LEFT:
                     balanceToColumn(NEAR_OFFSET);
@@ -262,7 +274,7 @@ public class TesseractAuto extends LinearOpMode {
                     balanceToColumn(unknownDefault);
                     break;
             }
-        } else {
+        } else if (startPos == StartPosition.RED_B) {
             switch (mark) {
                 case LEFT:
                     balanceToColumn(FAR_OFFSET);
@@ -278,6 +290,47 @@ public class TesseractAuto extends LinearOpMode {
                     break;
             }
         }
+
+        // A POSITION
+        if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
+            m.run(2300, 0, 1);
+            moveVec.SetComponents(-1*sideModifier, 0);
+            m.setDirectionVector(moveVec);
+        }
+
+        if (startPos == StartPosition.BLUE_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(A_NEAR_OFFSET, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(A_CENTER_OFFSET, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(A_FAR_OFFSET, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(A_NEAR_OFFSET, 0, 1);
+                    break;
+            }
+        } else if (startPos ==  StartPosition.RED_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(A_FAR_OFFSET, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(A_CENTER_OFFSET, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(A_NEAR_OFFSET, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(A_CENTER_OFFSET, 0, 1);
+                    break;
+            }
+        }
+
+
     }
 
     private void collectBlocks() {
@@ -289,17 +342,26 @@ public class TesseractAuto extends LinearOpMode {
 
         rLift.setPower(1);
         lLift.setPower(-1);
-        lCollect.setPower(.75);
+        lCollect.setPower(.8);
+        rCollect.setPower(-.8);
 
-        m.powerConstant = 0.15f;
-        m.run(2500, 0, 1);
-
-        lCollect.setPower(.5);
-        rCollect.setPower(-.5);
+        m.powerConstant = 0.9f * 35/45;
+        m.run(1900, 0, 1);
 
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(2500, 0, 1);
+        m.run(800, 0, 1);
+
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(1200, 0, 1);
+
+
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(2300, 0, 1);
+
+        sleep(700);
     }
 
     private void balanceToColumn(long columnOffset) {
