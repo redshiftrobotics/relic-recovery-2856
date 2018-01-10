@@ -197,13 +197,13 @@ public class TesseractTeleop extends OpMode {
     }
 
     // Uses right joystick
-    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01; // Needs to be calibrated (maybe)
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.05; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
 
-        if (pad.right_stick_y >= 0.05) {
+        if (pad.right_stick_y >= CONTINUOUS_SERVO_JOYSTICK_THRESH) {
             armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
             clawServo.setPosition(.7);
-        } else if (pad.right_stick_y <= -0.05) {
+        } else if (pad.right_stick_y <= -CONTINUOUS_SERVO_JOYSTICK_THRESH) {
             lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
             armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_OUT);
         }
@@ -214,8 +214,5 @@ public class TesseractTeleop extends OpMode {
         armServoControl(pad);
         clawServoControl(pad);
         armExtensionControl(pad);
-    }
-
-    private void debounce() {
     }
 }
