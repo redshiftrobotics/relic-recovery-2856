@@ -5,8 +5,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 
 /**
@@ -39,10 +41,12 @@ public class TesseractAuto extends LinearOpMode {
     private ColorSensor js;
     private boolean jsConnected = false;
 
+    private DistanceSensor upperBlock;
+
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
 
-    private static final long CENTER_MOVE_TIME = 2850;
+    private static final long CENTER_MOVE_TIME = 2700;
     private static final long FAR_OFFSET = 400;
     private static final long NEAR_OFFSET = -400;
     private static final long CENTER_OFFSET = 0;
@@ -83,10 +87,33 @@ public class TesseractAuto extends LinearOpMode {
         depositBlock();
         lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+
+        sleep(4000);
+
         if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
             collectBlocks();
+            rLift.setPower(0);
+            lLift.setPower(0);
+            sleep(4000);
+            // get block to sensor
+            while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
+                rLift.setPower(1);
+                lLift.setPower(-1);
+            }
+            rLift.setPower(0);
+            lLift.setPower(0);
+            sleep(4000);
+            // run until sensor no longer sees block
+            while(!(upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
+                rLift.setPower(1);
+                lLift.setPower(-1);
+            }
+            rLift.setPower(0);
+            lLift.setPower(0);
+            sleep(4000);
             depositBlock();
         }
+
     }
 
     void initialize() {
@@ -146,6 +173,7 @@ public class TesseractAuto extends LinearOpMode {
         jsR = hardwareMap.colorSensor.get("jsRight");
         js = jsR;
 
+        upperBlock = hardwareMap.get(DistanceSensor.class, "upperBlock");
     }
 
     void depositBlock() {
@@ -211,6 +239,7 @@ public class TesseractAuto extends LinearOpMode {
 
             // Update the drive team.
             telemetry.addData("Starting Position: ", startPos);
+            telemetry.addData("Upper Block Sensor: ", upperBlock.getDistance(DistanceUnit.CM));
             telemetry.addData("Jewel Color Sensor Connected ", jsConnected);
             telemetry.update();
         }
@@ -251,7 +280,7 @@ public class TesseractAuto extends LinearOpMode {
 
     private void navigateToColumn(RelicRecoveryVuMark mark) {
 
-        long unknownDefault = FAR_OFFSET;
+        long unknownDefault = CENTER_OFFSET;
 
         telemetry.log().add("Executing on position B");
         moveVec.SetComponents(0, 1);
@@ -334,6 +363,19 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void collectBlocks() {
+
+        /**
+         *  New solution... Go forward running intake and belting until a block is seen by the "lowerBlock" sensor. Then simultaneously
+         *  - Run belting until "upperBlock" sees a block.
+         *  - When "lowerBlock" no longer sees a block, go forward running INTAKE ONLY (belting should be controlled by the aforementioned other check) until a block is seen by the "lowerBlock" sensor.
+         *  As soon as the second block is seen in the intake, all of the above can be terminated. The robot should then return to the crypto box and
+         *  PUSH AGAINST THE FIRST BLOCK and back off a certain encoder count (or better yet, use a REV distance sensor to get the value by looking at the first scored block).
+         *  The distance between the robot and the first scored block should now be such that running the belting with NO EXTRA MOVEMENTS, can score BOTH BLOCKS...
+         *  So the final action is to run the belting and intake while staying still, and finishing with a super silky push in and back away.
+         */
+
+
+
         lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
@@ -361,7 +403,10 @@ public class TesseractAuto extends LinearOpMode {
         m.setDirectionVector(moveVec);
         m.run(2300, 0, 1);
 
-        sleep(700);
+        rLift.setPower(0);
+        lLift.setPower(0);
+        lCollect.setPower(0);
+        rCollect.setPower(0);
     }
 
     private void balanceToColumn(long columnOffset) {
