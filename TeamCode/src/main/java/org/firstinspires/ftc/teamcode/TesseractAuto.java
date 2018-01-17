@@ -46,7 +46,7 @@ public class TesseractAuto extends LinearOpMode {
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
 
-    private static final long CENTER_MOVE_TIME = 2700;
+    private static final long CENTER_MOVE_TIME = 2250;
     private static final long FAR_OFFSET = 400;
     private static final long NEAR_OFFSET = -400;
     private static final long CENTER_OFFSET = 0;
@@ -177,26 +177,26 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     void depositBlock() {
-        m.powerConstant = 0.5f * 35/45;
+        m.powerConstant = 0.5f;
         m.setTweenTime(0);
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(1500, 0, 1);
+        m.run(1150, 0, 1);
         rLift.setPower(1);
         lLift.setPower(-1);
         // allow block to reach top before backing
         sleep(500);
 
-        m.powerConstant = 0.25f * 35/45;
+        m.powerConstant = 0.25f;
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
-        m.run(1600, 0, 1);
+        m.run(1250, 0, 1);
         rLift.setPower(0);
         lLift.setPower(0);
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(1000, 0, 1);
-        m.powerConstant = 0.9f * 35/45;
+        m.run(777, 0, 1);
+        m.powerConstant = 0.9f;
         m.setTweenTime(TWEEN_TIME);
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
@@ -280,7 +280,7 @@ public class TesseractAuto extends LinearOpMode {
 
     private void navigateToColumn(RelicRecoveryVuMark mark) {
 
-        long unknownDefault = CENTER_OFFSET;
+        long unknownDefault = FAR_OFFSET;
 
         telemetry.log().add("Executing on position B");
         moveVec.SetComponents(0, 1);
@@ -322,7 +322,7 @@ public class TesseractAuto extends LinearOpMode {
 
         // A POSITION
         if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
-            m.run(2300, 0, 1);
+            m.run(1800, 0, 1);
             moveVec.SetComponents(-1*sideModifier, 0);
             m.setDirectionVector(moveVec);
         }
@@ -387,21 +387,21 @@ public class TesseractAuto extends LinearOpMode {
         lCollect.setPower(.8);
         rCollect.setPower(-.8);
 
-        m.powerConstant = 0.9f * 35/45;
-        m.run(1900, 0, 1);
+        m.powerConstant = 0.9f;
+        m.run(1500, 0, 1);
 
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(800, 0, 1);
+        m.run(650, 0, 1);
 
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
-        m.run(1200, 0, 1);
+        m.run(950, 0, 1);
 
 
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(2300, 0, 1);
+        m.run(1800, 0, 1);
 
         rLift.setPower(0);
         lLift.setPower(0);

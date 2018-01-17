@@ -46,7 +46,7 @@ public class MechanumChassis {
 
     private LinearOpMode context;
 
-    public float powerConstant = 0.9f * 35/45; // multiplier for drive train change, addition for added time to overcome static friction with new drive-train
+    public float powerConstant = 0.9f; // multiplier for drive train change, addition for added time to overcome static friction with new drive-train
 
     MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, LinearOpMode context) {
         this.m0 = m0;
