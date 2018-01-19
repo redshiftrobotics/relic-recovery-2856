@@ -4,6 +4,8 @@ import com.sun.tools.javac.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoPatterns.*;
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns.*;
@@ -32,9 +34,11 @@ public class BlockPlacer {
     /**
      * Placement method preference. Use setPlacementMethod with PREFER_COLUMNS or PREFER_ROWS to indicate preference.
      */
-    private static final int PREFER_COLUMNS = 0;
-    private static final int PREFER_ROWS = 1;
+    public static final int PREFER_COLUMNS = 0; // Prefer columns not done.
+    public static final int PREFER_ROWS = 1;
+    public static final int PREFER_LEAST_MOVEMENT = 2;
     private int PlacementMethodPreference = PREFER_ROWS;
+    private int LastColumn = CryptoboxColumns.INVALID;
     public void setPlacementMethodPreference( int iPreference ) { PlacementMethodPreference = iPreference; }
 
     /**
@@ -74,6 +78,7 @@ public class BlockPlacer {
         switch ( PlacementMethodPreference )
         {
             case PREFER_COLUMNS:
+                // This method has been benched.
                 break;
             case PREFER_ROWS:
             default:
@@ -136,6 +141,36 @@ public class BlockPlacer {
                 }
 
                 break;
+            case PREFER_LEAST_MOVEMENT:
+                // Should never be invalid, but just in case...
+                if( LastColumn == INVALID || !IntArrayToArrayList(viableColumns).contains(LastColumn) )
+                {
+                    // We either havent placed a block or we cannot place our block in the same column we just placed it in.
+                    // Therefore placement requires horizontal movement and we have "broken formation"
+                    // Choose from our preferred columns TODO: Choose next column based on distance from current column.
+                    columnloop:
+                    for( int iColumnPreference : CryptoColumnPreference )
+                    {
+                        for( int iColumn : viableColumns )
+                        {
+                            if( iColumnPreference == iColumn )
+                            {
+                                nextBlockColumn = iColumn;
+                                LastColumn = iColumn;
+                                break columnloop;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    nextBlockColumn = LastColumn;
+                }
+
+                Block topmostBlockForColumn = getColumnTopmostBlocks().get(nextBlockColumn);
+                nextBlockRow = topmostBlockForColumn != null ? topmostBlockForColumn.row + 1 : 0; // If null (meaning no block) the next row is 0.
+
+                break;
         }
 
         if( nextBlockColumn != CryptoboxColumns.INVALID && nextBlockRow != -1 )
@@ -151,31 +186,13 @@ public class BlockPlacer {
      */
     private int[] getViableColumns( int blockColor )
     {
-        // Another one of the reasons I like C more than java... TYPEDEFS!
-        // Implicit indexing based on the order of CryptoboxColumns. Cant really think of a more elegant way to do this. Sorry DavidB.
-        ArrayList< Block > ColumnsTopmostBlocks = new ArrayList< Block >(){{
-            add(null); add(null); add(null);
-        }};
-
-        // Loop through placed blocks to find topmost blocks.
-        for( Block curBlock : CryptoboxState )
-        {
-            Block curBlockColumnTopmostBlock = ColumnsTopmostBlocks.get(curBlock.column);
-
-            if( curBlockColumnTopmostBlock == null || curBlock.row > curBlockColumnTopmostBlock.row )
-            {
-                ColumnsTopmostBlocks.set( curBlock.column, curBlock );
-            }
-        }
+        ArrayList< Block > ColumnsTopmostBlocks = getColumnTopmostBlocks();
 
         ArrayList<Integer> ViableColumns = new ArrayList<Integer>() {{
             add(LEFT);
             add(MIDDLE);
             add(RIGHT);
         }};
-
-        // We no longer need null elements in ColumnsTopmostBlocks
-        //ColumnsTopmostBlocks.removeAll( Collections.<Pair<Pair<Integer, Integer>, Integer>>singleton( null ) );
 
         // Determine viable columns
         for( int iColumn = 0; iColumn < ColumnsTopmostBlocks.size(); iColumn++ )
@@ -208,6 +225,26 @@ public class BlockPlacer {
         return ArraylistToIntArray( ViableColumns );
     }
 
+    private ArrayList< Block > getColumnTopmostBlocks()
+    {
+        // Implicit indexing based on the order of CryptoboxColumns.
+        ArrayList< Block > ColumnsTopmostBlocks = new ArrayList< Block >(){{
+            add(null); add(null); add(null);
+        }};
+
+        // Loop through placed blocks to find topmost blocks.
+        for( Block curBlock : CryptoboxState )
+        {
+            Block curBlockColumnTopmostBlock = ColumnsTopmostBlocks.get(curBlock.column);
+
+            if( curBlockColumnTopmostBlock == null || curBlock.row > curBlockColumnTopmostBlock.row )
+            {
+                ColumnsTopmostBlocks.set( curBlock.column, curBlock );
+            }
+        }
+        return ColumnsTopmostBlocks;
+    }
+
     /**
      * Public constructor
      */
@@ -215,6 +252,7 @@ public class BlockPlacer {
     {
         CryptoboxState = new ArrayList<>();
         CryptoboxState.add( new Block(firstBlockColumn, 0 , firstBlockColor ));
+        LastColumn = firstBlockColumn;
     }
 
     /**
@@ -273,5 +311,26 @@ public class BlockPlacer {
         }
 
         return true;
+    }
+
+    /**
+     * Inverts the current cryptobox state such that blocks are addressable by [row][column] as
+     * opposed to [column][row]
+     * @return the inverted cryptobox state.
+     */
+    private int[][] getInvertedCryptoboxState()
+    {
+        int[][] sortedCryptoboxState = sortCryptoboxState(CryptoboxState);
+        int[][] invertedCryptoboxState = new int[sortedCryptoboxState[0].length][sortedCryptoboxState.length]; // Inverse dimensions
+
+        for( int iRowIndex = 0; iRowIndex < sortedCryptoboxState[0].length; iRowIndex++ )
+        {
+            for( int iColumnIndex = 0; iColumnIndex < sortedCryptoboxState.length; iColumnIndex++ )
+            {
+                invertedCryptoboxState[iRowIndex][iColumnIndex] = sortedCryptoboxState[iColumnIndex][iRowIndex];
+            }
+        }
+
+        return invertedCryptoboxState;
     }
 }

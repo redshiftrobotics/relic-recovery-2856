@@ -9,4 +9,10 @@ public class Block {
     Integer column, row, color;
 
     public Block( Integer column, Integer row, Integer color) { this.column = column; this.row = row; this.color = color; }
+
+    @Override
+    public String toString()
+    {
+        return column + " " + row + " " + color;
+    }
 }

@@ -19,5 +19,13 @@ public class BlockPlacerTest extends TestCase {
         bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
         assertEquals( CryptoboxColumns.LEFT, bop.getNextBlockColumn(BlockColors.GREY) );
         assertEquals( CryptoPatterns.SNAKE, bop.getPattern());
+
+        // Test least movement method
+        bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
+        bop.setPlacementMethodPreference( BlockPlacer.PREFER_LEAST_MOVEMENT );
+        assertEquals( CryptoboxColumns.MIDDLE, bop.getNextBlockColumn(BlockColors.BROWN) );
+        assertEquals( CryptoboxColumns.RIGHT, bop.getNextBlockColumn(BlockColors.BROWN)  );
+        assertEquals( CryptoboxColumns.RIGHT, bop.getNextBlockColumn(BlockColors.GREY) );
+        assertEquals( CryptoboxColumns.MIDDLE, bop.getNextBlockColumn(BlockColors.GREY) );
     }
 }
