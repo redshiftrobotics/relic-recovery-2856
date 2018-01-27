@@ -48,7 +48,7 @@ public class MechanumChassis {
 
     private float imuInitOffset = -9000;
 
-    private float teleopHeading = 0;
+    private float teleopHeading = -9000;
 
     private float tweenTime = 1;
     private float rotationTarget = 0;
@@ -120,6 +120,13 @@ public class MechanumChassis {
         tm.addData("(rotation, teleopHeading, P value)", getRotation() + ", " + (getRotation() - teleopHeading) + ", " + teleopHeading);
         tm.update();
         setMotorPowers(1, getOffset(getRotation(), teleopHeading) / 40);
+    }
+
+    void lockRotation() {
+        if(teleopHeading == -9000 /* has not been set already */) {
+            teleopHeading = getRotation();
+        }
+        setMotorPowers(1, getOffset(getRotation(), teleopHeading) / 27);
     }
 
     private float getRotation() {

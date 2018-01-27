@@ -80,7 +80,7 @@ public class TesseractAuto extends LinearOpMode {
 
         m.setRotationTarget(0);
         // Kick the jewel off.
-//        doJewel();
+        doJewel();
 
 //        m.turnToTarget();
         navigateToColumn(mark);
@@ -88,8 +88,6 @@ public class TesseractAuto extends LinearOpMode {
 
 
         depositBlock();
-//        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
-//        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
 //        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
 //            collectBlocks();
@@ -427,6 +425,9 @@ public class TesseractAuto extends LinearOpMode {
         telemetry.log().add("Finished running, starting turn");
         m.setRotationTarget(90 * sideModifier);
         m.turnToTarget();
+
+        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
     }
 
     private enum StartPosition {

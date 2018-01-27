@@ -127,11 +127,11 @@ public class TesseractTeleop extends OpMode {
     }
 
     private void driveTrainControl(Gamepad pad) {
-        if(rotationLock.debounce(pad.left_stick_button)) {
+        if(rotationLock.debounce(pad.right_stick_button)) {
             m.addJoystickRotation(pad.left_stick_x);
             m.setMotorPowers();
         } else {
-            m.addTeleopIMUTarget(pad.left_stick_x, telemetry);
+            m.lockRotation();
         }
     }
 
@@ -205,11 +205,16 @@ public class TesseractTeleop extends OpMode {
     // Uses right joystick
     private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.05; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
-        relic.setPower(pad.right_stick_y);
-        if (-pad.right_stick_y >= 0.05) {
-            clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
-        } else if (-pad.right_stick_y <= -0.05) {
+        relic.setPower(-pad.right_stick_y);
+
+//        if (pad.right_stick_y >= 0.05) {
+//            clawServo.setPosition(ServoValue.RELIC_CLAW_OUT);
+//        }
+
+        if (Math.abs(pad.right_stick_y) >= 0.05) {
             lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
+        } else {
+            lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
         }
 
     }
