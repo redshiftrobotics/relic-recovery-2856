@@ -5,8 +5,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
@@ -23,7 +25,6 @@ public class TesseractAuto extends LinearOpMode {
     private Servo rFlip;
 
     DcMotor lLift;
-    DcMotor rLift;
 
     DcMotor lCollect;
     DcMotor rCollect;
@@ -31,7 +32,6 @@ public class TesseractAuto extends LinearOpMode {
 
     private Servo armServo;
     private Servo clawServo;
-    private Servo armExtensionServo;
 
     private MechanumChassis m;
     private Vector2D moveVec;
@@ -43,21 +43,26 @@ public class TesseractAuto extends LinearOpMode {
 
     private DistanceSensor upperBlock;
 
+    private Servo rAlignServo;
+    private DigitalChannel sideSwitch;
+    private DigitalChannel frontSwitch;
+
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
 
-    private static final long CENTER_MOVE_TIME = 2250;
-    private static final long FAR_OFFSET = 400;
-    private static final long NEAR_OFFSET = -400;
+    //2220 Perfectly centers, but we want to error to one side so we can use the button
+    private static final long CENTER_MOVE_TIME = 2225;
+    private static final long FAR_OFFSET = 325;
+    private static final long NEAR_OFFSET = -325;
     private static final long CENTER_OFFSET = 0;
 
-    private static final long A_FAR_OFFSET = 2400;
-    private static final long A_CENTER_OFFSET = 1800;
-    private static final long A_NEAR_OFFSET = 1250;
+    private static final long A_CENTER_OFFSET = 1500;
+    private static final long A_NEAR_OFFSET = A_CENTER_OFFSET - 410;
+    private static final long A_FAR_OFFSET = A_CENTER_OFFSET + 410;
 
     private VuforiaHelper vHelper;
 
-    private StartPosition startPos = StartPosition.BLUE_B;
+    private StartPosition startPos = StartPosition.RED_B;
     private int sideModifier = 1;
 
     @Override
@@ -74,10 +79,8 @@ public class TesseractAuto extends LinearOpMode {
 //        m.hackTurn(1);
 
         m.setRotationTarget(0);
-
-
         // Kick the jewel off.
-        doJewel();
+//        doJewel();
 
 //        m.turnToTarget();
         navigateToColumn(mark);
@@ -85,35 +88,12 @@ public class TesseractAuto extends LinearOpMode {
 
 
         depositBlock();
-        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
-        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+//        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+//        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
-        sleep(4000);
-
-        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
-            collectBlocks();
-            rLift.setPower(0);
-            lLift.setPower(0);
-            sleep(4000);
-            // get block to sensor
-            while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
-                rLift.setPower(1);
-                lLift.setPower(-1);
-            }
-            rLift.setPower(0);
-            lLift.setPower(0);
-            sleep(4000);
-            // run until sensor no longer sees block
-            while(!(upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
-                rLift.setPower(1);
-                lLift.setPower(-1);
-            }
-            rLift.setPower(0);
-            lLift.setPower(0);
-            sleep(4000);
-            depositBlock();
-        }
-
+//        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
+//            collectBlocks();
+//        }
     }
 
     void initialize() {
@@ -122,17 +102,15 @@ public class TesseractAuto extends LinearOpMode {
         lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
 
+        rAlignServo = hardwareMap.servo.get("rAlignServo");
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
 
         armServo = hardwareMap.servo.get("armServo");
         armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
         clawServo = hardwareMap.servo.get("clawServo");
         clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
 
-        armExtensionServo = hardwareMap.servo.get("armExtension");
-        armExtensionServo.setPosition(ServoValue.RELIC_ARM_EXTENSION_IN);
-
         lLift = hardwareMap.dcMotor.get("lBelting");
-        rLift = hardwareMap.dcMotor.get("rBelting");
 
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
@@ -174,6 +152,11 @@ public class TesseractAuto extends LinearOpMode {
         js = jsR;
 
         upperBlock = hardwareMap.get(DistanceSensor.class, "upperBlock");
+
+        sideSwitch = hardwareMap.get(DigitalChannel.class, "sideSwitch");
+        frontSwitch = hardwareMap.get(DigitalChannel.class, "frontSwitch");
+
+        m.initScoring(lLift, lCollect, rCollect, upperBlock);
     }
 
     void depositBlock() {
@@ -181,18 +164,17 @@ public class TesseractAuto extends LinearOpMode {
         m.setTweenTime(0);
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(1150, 0, 1);
-        rLift.setPower(1);
+        m.run(800, 0, 1);
         lLift.setPower(-1);
-        // allow block to reach top before backing
-        sleep(500);
-
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
         m.powerConstant = 0.25f;
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
-        m.run(1250, 0, 1);
-        rLift.setPower(0);
+        m.run(1100, 0, 1);
         lLift.setPower(0);
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
         m.run(777, 0, 1);
@@ -216,6 +198,7 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void configurationLoop() {
+        js = jsR;
         while(!isStarted()) {
             // Side and position configuration.
             if(gamepad1.a) {
@@ -281,6 +264,7 @@ public class TesseractAuto extends LinearOpMode {
     private void navigateToColumn(RelicRecoveryVuMark mark) {
 
         long unknownDefault = FAR_OFFSET;
+        long unknownADefault = A_NEAR_OFFSET;
 
         telemetry.log().add("Executing on position B");
         moveVec.SetComponents(0, 1);
@@ -339,7 +323,7 @@ public class TesseractAuto extends LinearOpMode {
                     m.run(A_FAR_OFFSET, 0, 1);
                     break;
                 case UNKNOWN:
-                    m.run(A_NEAR_OFFSET, 0, 1);
+                    m.run(unknownADefault, 0, 1);
                     break;
             }
         } else if (startPos ==  StartPosition.RED_A) {
@@ -354,7 +338,7 @@ public class TesseractAuto extends LinearOpMode {
                     m.run(A_NEAR_OFFSET, 0, 1);
                     break;
                 case UNKNOWN:
-                    m.run(A_CENTER_OFFSET, 0, 1);
+                    m.run(unknownADefault, 0, 1);
                     break;
             }
         }
@@ -374,39 +358,68 @@ public class TesseractAuto extends LinearOpMode {
          *  So the final action is to run the belting and intake while staying still, and finishing with a super silky push in and back away.
          */
 
-
-
         lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
 
-        rLift.setPower(1);
+        m.powerConstant = 0.9f;
+        m.run(1500, 0, 1, true);
+
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(650, 0, 1, true);
+
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(950, 0, 1, true);
+
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+
+
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
+        m.homeToCryptoColumn(frontSwitch, sideSwitch);
+
+        // This should already happen while driving, but just in case... Run belting until block ready to stage.
+        while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
+            lLift.setPower(-1);
+        }
+
         lLift.setPower(-1);
         lCollect.setPower(.8);
         rCollect.setPower(-.8);
 
-        m.powerConstant = 0.9f;
-        m.run(1500, 0, 1);
+        sleep(3000);
 
-        moveVec.SetComponents(0, 1);
-        m.setDirectionVector(moveVec);
-        m.run(650, 0, 1);
-
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(950, 0, 1);
-
-
-        moveVec.SetComponents(0, 1);
-        m.setDirectionVector(moveVec);
-        m.run(1800, 0, 1);
-
-        rLift.setPower(0);
         lLift.setPower(0);
         lCollect.setPower(0);
         rCollect.setPower(0);
+
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
+
+        m.setTweenTime(0);
+        m.powerConstant = 0.4f;
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(350, 0, 1);
+        m.setTweenTime(TWEEN_TIME);
+
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+
+        m.setTweenTime(0);
+        moveVec.SetComponents(0, 1);
+        m.setDirectionVector(moveVec);
+        m.run(500, 0, 1, true);
+        m.powerConstant = 0.9f;
+        m.setTweenTime(TWEEN_TIME);
+
+        m.powerConstant = 0.5f;
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(800, 0, 1, true);
     }
 
     private void balanceToColumn(long columnOffset) {

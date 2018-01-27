@@ -3,11 +3,15 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /**
  * Created by matt on 9/16/17.
@@ -34,6 +38,13 @@ public class MechanumChassis {
     private DcMotor m2;
     private DcMotor m3;
     private BNO055IMU imu;
+
+
+    // Scoring mechanism controls
+    private DcMotor lLift;
+    private DcMotor lCollect;
+    private DcMotor rCollect;
+    private DistanceSensor upperBlock;
 
     private float imuInitOffset = -9000;
 
@@ -197,16 +208,102 @@ public class MechanumChassis {
         stopMotors();
     }
 
-    void run(long millis, float startSpeed, float endSpeed) {
+    void initScoring(DcMotor l, DcMotor lC, DcMotor rC, DistanceSensor uB) {
+        lLift = l;
+        lCollect = lC;
+        rCollect = rC;
+        upperBlock = uB;
+    }
+
+    void safeRunBelting() {
+        if(upperBlock != null) {
+            context.telemetry.addData("upperBlock is non-null", "");
+            if (upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) {
+                lLift.setPower(-1);
+                lCollect.setPower(.8);
+                rCollect.setPower(-.8);
+            } else {
+                lLift.setPower(0);
+                lCollect.setPower(0);
+                rCollect.setPower(0);
+            }
+        }
+    }
+
+    void run(long m, float s, float e) {
+        run(m, s, e, false);
+    }
+
+    void run(long millis, float startSpeed, float endSpeed, boolean runBelting) {
         long start = System.currentTimeMillis();
         float P;
         float elapsedTime;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
+            if(runBelting) {
+                safeRunBelting();
+            }
             elapsedTime = System.currentTimeMillis() - start;
             P = getOffset(getRotation()) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
+    }
+
+    void homeToCryptoColumn(DigitalChannel frontSwitch, DigitalChannel sideSwitch) {
+        float P;
+        Vector2D movementDirection = new Vector2D(0, 1);
+
+        // DigitalChannel.getState() evaluates to false when switch is pressed
+        while (frontSwitch.getState() && context.opModeIsActive()) {
+            P = getOffset(getRotation()) / 30;
+            setMotorPowers(0.9f, P);
+        }
+
+        while (!(!frontSwitch.getState() && !sideSwitch.getState()) && context.opModeIsActive()) {
+            context.telemetry.addData("frontSwitch", frontSwitch.getState());
+            context.telemetry.addData("sideSwitch", sideSwitch.getState());
+            context.telemetry.update();
+            if(!frontSwitch.getState()) {
+                movementDirection.SetYComponent(0);
+            } else {
+                movementDirection.SetYComponent(Math.sqrt(2)/2);
+            }
+            if(!sideSwitch.getState()) {
+                movementDirection.SetXComponent(0);
+            } else {
+                movementDirection.SetXComponent(-Math.sqrt(2)/2);
+            }
+
+            setDirectionVector(movementDirection);
+            P = getOffset(getRotation()) / 30;
+            setMotorPowers(0.6f, P);
+        }
+        stopMotors();
+    }
+
+    // DEPRECATED, use homeToCryptoColumn
+    void runToBox(DistanceSensor ods, boolean runBelting) {
+        powerConstant = 0.3f;
+        float P;
+        while (Math.abs(getDistanceError(ods)) > 0.17 && context.opModeIsActive()) {
+            if(runBelting) {
+                safeRunBelting();
+            }
+            P = getOffset(getRotation()) / 20;
+            context.telemetry.addData("error", getDistanceError(ods));
+            context.telemetry.update();
+            setMotorPowers(Range.clip(getDistanceError(ods) / 60, -0.4, 0.4), P);
+        }
+        stopMotors();
+        powerConstant = 0.9f;
+    }
+
+    private double getDistanceError(DistanceSensor ods) {
+        float targetDistance = 20;
+        if(Double.isNaN(ods.getDistance(DistanceUnit.CM))) {
+            return 100;
+        }
+        return ods.getDistance(DistanceUnit.CM) - targetDistance;
     }
 
     void addJoystickRotation(double rotation){
