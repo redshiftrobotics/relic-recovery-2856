@@ -72,11 +72,16 @@ public class MechanumChassis {
         this.context = context;
     }
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        this.imu = i;
+        this.imu.initialize(parameters);
+
         initMotors();
     }
 
@@ -114,7 +119,7 @@ public class MechanumChassis {
         teleopHeading += 4 * joyInput;
         tm.addData("(rotation, teleopHeading, P value)", getRotation() + ", " + (getRotation() - teleopHeading) + ", " + teleopHeading);
         tm.update();
-        setMotorPowers(1, (getRotation() - teleopHeading) / 40);
+        setMotorPowers(1, getOffset(getRotation(), teleopHeading) / 40);
     }
 
     private float getRotation() {
@@ -135,7 +140,7 @@ public class MechanumChassis {
         float P;
         while(context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
 
-            P = getOffset(getRotation());
+            P = getOffset(getRotation(), rotationTarget);
 
             if(Math.abs(P) < 0.07) {
                 break;
@@ -156,13 +161,13 @@ public class MechanumChassis {
         stopMotors();
     }
 
-    private float getOffset(float currentAngle) {
-        if (currentAngle + 360 - rotationTarget <= 180) {
-            return (currentAngle -  rotationTarget + 360);
-        } else if (rotationTarget + 360 - currentAngle <= 180) {
-            return (rotationTarget - currentAngle + 360) * -1;
-        } else if (currentAngle -  rotationTarget <= 180) {
-            return (currentAngle -  rotationTarget);
+    private float getOffset(float currentAngle, float target) {
+        if (currentAngle + 360 - target <= 180) {
+            return (currentAngle -  target + 360);
+        } else if (target + 360 - currentAngle <= 180) {
+            return (target - currentAngle + 360) * -1;
+        } else if (currentAngle -  target <= 180) {
+            return (currentAngle -  target);
         }
         return 0;
     }
@@ -243,7 +248,7 @@ public class MechanumChassis {
                 safeRunBelting();
             }
             elapsedTime = System.currentTimeMillis() - start;
-            P = getOffset(getRotation()) / 30;
+            P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
@@ -255,7 +260,7 @@ public class MechanumChassis {
 
         // DigitalChannel.getState() evaluates to false when switch is pressed
         while (frontSwitch.getState() && context.opModeIsActive()) {
-            P = getOffset(getRotation()) / 30;
+            P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(0.9f, P);
         }
 
@@ -275,7 +280,7 @@ public class MechanumChassis {
             }
 
             setDirectionVector(movementDirection);
-            P = getOffset(getRotation()) / 30;
+            P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(0.6f, P);
         }
         stopMotors();
@@ -289,7 +294,7 @@ public class MechanumChassis {
             if(runBelting) {
                 safeRunBelting();
             }
-            P = getOffset(getRotation()) / 20;
+            P = getOffset(getRotation(), rotationTarget) / 20;
             context.telemetry.addData("error", getDistanceError(ods));
             context.telemetry.update();
             setMotorPowers(Range.clip(getDistanceError(ods) / 60, -0.4, 0.4), P);

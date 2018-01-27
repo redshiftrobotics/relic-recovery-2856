@@ -31,7 +31,6 @@ public class ServoValue {
     /* OLD VALUES FOR BELTING MECHANISM
         public static float FLIPPER_RIGHT_UP = 0.725f;
         public static float FLIPPER_LEFT_UP = 0.100f;
-
         public static float FLIPPER_RIGHT_DOWN = 0.000f;
         public static float FLIPPER_LEFT_DOWN = 0.850f;
      */

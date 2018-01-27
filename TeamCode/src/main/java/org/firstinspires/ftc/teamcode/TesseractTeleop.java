@@ -58,6 +58,7 @@ public class TesseractTeleop extends OpMode {
     Servo rTentacle;
 
     private Debouncer flipBounce;
+    private Debouncer rotationLock;
 
     @Override
     public void init() {
@@ -77,6 +78,7 @@ public class TesseractTeleop extends OpMode {
         glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
 
         flipBounce = new Debouncer();
+        rotationLock = new Debouncer();
 
         armServo = hardwareMap.servo.get("armServo");
         armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
@@ -102,7 +104,8 @@ public class TesseractTeleop extends OpMode {
             hardwareMap.dcMotor.get("m0"),
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
-            hardwareMap.dcMotor.get("m3")
+            hardwareMap.dcMotor.get("m3"),
+            hardwareMap.get(BNO055IMU.class, "imu")
         );
 
         telemetry.addData("Status", "Initialized");
@@ -113,15 +116,23 @@ public class TesseractTeleop extends OpMode {
     public void loop() {
         Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
         m.setDirectionVector(v);
-        m.addJoystickRotation(gamepad1.left_stick_x);
-        m.setMotorPowers();
-//        m.addTeleopIMUTarget(gamepad1.left_stick_x, telemetry);
+
+        driveTrainControl(gamepad1);
 
         liftControl(gamepad2);
         relicControl(gamepad2);
 
         intakeControl(gamepad1);
         scoreControl(gamepad1);
+    }
+
+    private void driveTrainControl(Gamepad pad) {
+        if(rotationLock.debounce(pad.left_stick_button)) {
+            m.addJoystickRotation(pad.left_stick_x);
+            m.setMotorPowers();
+        } else {
+            m.addTeleopIMUTarget(pad.left_stick_x, telemetry);
+        }
     }
 
     /***
@@ -155,6 +166,7 @@ public class TesseractTeleop extends OpMode {
             rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
         }
 
+
         rCollect.setPower(-pad.right_trigger);
         lCollect.setPower(pad.left_trigger);
 
@@ -170,7 +182,6 @@ public class TesseractTeleop extends OpMode {
             glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
             glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
         } else {
-
             glyphFlipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
             glyphFlipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         }
@@ -192,10 +203,9 @@ public class TesseractTeleop extends OpMode {
     }
 
     // Uses right joystick
-    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.01; // Needs to be calibrated (maybe)
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.05; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
         relic.setPower(pad.right_stick_y);
-
         if (-pad.right_stick_y >= 0.05) {
             clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
         } else if (-pad.right_stick_y <= -0.05) {
