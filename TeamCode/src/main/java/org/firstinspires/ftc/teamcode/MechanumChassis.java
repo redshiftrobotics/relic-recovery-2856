@@ -2,15 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 /**
  * Created by matt on 9/16/17.
@@ -38,9 +39,16 @@ public class MechanumChassis {
     private DcMotor m3;
     private BNO055IMU imu;
 
-    private float imuInitOffset = -1.0f;
 
-    private float teleopHeading = 0;
+    // Scoring mechanism controls
+    private DcMotor lLift;
+    private DcMotor lCollect;
+    private DcMotor rCollect;
+    private DistanceSensor upperBlock;
+
+    private float imuInitOffset = -9000;
+
+    private float teleopHeading = -9000;
 
     private float tweenTime = 1;
     private float rotationTarget = 0;
@@ -49,7 +57,7 @@ public class MechanumChassis {
 
     private LinearOpMode context;
 
-    public float powerConstant = 0.9f;
+    public float powerConstant = 0.9f; // multiplier for drive train change, addition for added time to overcome static friction with new drive-train
 
     MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i, LinearOpMode context) {
         this.m0 = m0;
@@ -69,6 +77,9 @@ public class MechanumChassis {
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
         initMotors();
     }
 
@@ -106,7 +117,14 @@ public class MechanumChassis {
         teleopHeading += 4 * joyInput;
         tm.addData("(rotation, teleopHeading, P value)", getRotation() + ", " + (getRotation() - teleopHeading) + ", " + teleopHeading);
         tm.update();
-        setMotorPowers(1, (getRotation() - teleopHeading) / 40);
+        setMotorPowers(1, getOffset(getRotation(), teleopHeading) / 40);
+    }
+
+    void lockRotation() {
+        if(teleopHeading == -9000 /* has not been set already */) {
+            teleopHeading = getRotation();
+        }
+        setMotorPowers(1, getOffset(getRotation(), teleopHeading) / 27);
     }
 
     private float getRotation() {
@@ -114,27 +132,20 @@ public class MechanumChassis {
     }
 
     public void setRotationTarget(float degrees) {
-        rotationTarget = degrees - imuInitOffset;
+        if(imuInitOffset == -9000 /* has not been set already */) {
+            imuInitOffset = getRotation();
+        }
+
+        rotationTarget = imuInitOffset - degrees;
     }
 
     public void turnToTarget() {
+        long start = System.currentTimeMillis();
+        long turnTimeout = 3000;
+        float P;
+        while(context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
 
-        if(imuInitOffset < 0 /* has not been set already */) {
-            imuInitOffset = getRotation();
-            rotationTarget = imuInitOffset - rotationTarget;
-        }
-
-        float P = 0;
-        float currentAngle;
-        while(context.opModeIsActive()) {
-            currentAngle = getRotation();
-            if (currentAngle + 360 - rotationTarget <= 180) {
-                P = (currentAngle -  rotationTarget + 360);
-            } else if (rotationTarget + 360 - currentAngle <= 180) {
-                P = (rotationTarget - currentAngle + 360) * -1;
-            } else if (currentAngle -  rotationTarget <= 180) {
-                P = (currentAngle -  rotationTarget);
-            }
+            P = getOffset(getRotation(), rotationTarget);
 
             if(Math.abs(P) < 0.07) {
                 break;
@@ -153,6 +164,17 @@ public class MechanumChassis {
             m3.setPower(P / 20);
         }
         stopMotors();
+    }
+
+    private float getOffset(float currentAngle, float target) {
+        if (currentAngle + 360 - target <= 180) {
+            return (currentAngle -  target + 360);
+        } else if (target + 360 - currentAngle <= 180) {
+            return (target - currentAngle + 360) * -1;
+        } else if (currentAngle -  target <= 180) {
+            return (currentAngle -  target);
+        }
+        return 0;
     }
 
     /***
@@ -196,16 +218,97 @@ public class MechanumChassis {
         stopMotors();
     }
 
-    void run(long millis, float startSpeed, float endSpeed) {
+    void initScoring(DcMotor l, DcMotor lC, DcMotor rC, DistanceSensor uB) {
+        lLift = l;
+        lCollect = lC;
+        rCollect = rC;
+        upperBlock = uB;
+    }
+
+    void safeRunBelting() {
+        if(upperBlock != null) {
+            context.telemetry.addData("upperBlock is non-null", "");
+            if (upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) {
+                lLift.setPower(-1);
+                lCollect.setPower(.8);
+                rCollect.setPower(-.8);
+            } else {
+                lLift.setPower(0);
+                lCollect.setPower(0);
+                rCollect.setPower(0);
+            }
+        }
+    }
+
+    void run(long m, float s, float e) {
+        run(m, s, e, false);
+    }
+
+    void run(long millis, float startSpeed, float endSpeed, boolean runBelting) {
         long start = System.currentTimeMillis();
         float P;
         float elapsedTime;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
+            if(runBelting) {
+                safeRunBelting();
+            }
             elapsedTime = System.currentTimeMillis() - start;
-            P = 0;//(getRotation() - rotationTarget) / 30;
+            P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
+    }
+
+    void homeToCryptoColumn(DigitalChannel frontSwitch, DigitalChannel sideSwitch) {
+        float P;
+        Vector2D movementDirection = new Vector2D(0, 1);
+        setDirectionVector(movementDirection);
+
+        while(frontSwitch.getState() && context.opModeIsActive()) {
+            P = getOffset(getRotation(), rotationTarget) / 30;
+            setMotorPowers(0.4f, P);
+        }
+
+        movementDirection = new Vector2D(0, -1);
+        setDirectionVector(movementDirection);
+        float oldTween = this.tweenTime;
+        tweenTime = 0;
+        run(200, 0, 0.5f);
+        tweenTime = oldTween;
+
+        movementDirection = new Vector2D(-1, 0);
+        setDirectionVector(movementDirection);
+
+        while(sideSwitch.getState() && context.opModeIsActive()) {
+            P = getOffset(getRotation(), rotationTarget) / 30;
+            setMotorPowers(0.35f, P);
+        }
+        stopMotors();
+    }
+
+    // DEPRECATED, use homeToCryptoColumn
+    void runToBox(DistanceSensor ods, boolean runBelting) {
+        powerConstant = 0.3f;
+        float P;
+        while (Math.abs(getDistanceError(ods)) > 0.17 && context.opModeIsActive()) {
+            if(runBelting) {
+                safeRunBelting();
+            }
+            P = getOffset(getRotation(), rotationTarget) / 20;
+            context.telemetry.addData("error", getDistanceError(ods));
+            context.telemetry.update();
+            setMotorPowers(Range.clip(getDistanceError(ods) / 60, -0.4, 0.4), P);
+        }
+        stopMotors();
+        powerConstant = 0.9f;
+    }
+
+    private double getDistanceError(DistanceSensor ods) {
+        float targetDistance = 20;
+        if(Double.isNaN(ods.getDistance(DistanceUnit.CM))) {
+            return 100;
+        }
+        return ods.getDistance(DistanceUnit.CM) - targetDistance;
     }
 
     void addJoystickRotation(double rotation){
@@ -236,8 +339,8 @@ public class MechanumChassis {
 
     private void setMotorPowers(double power, float P) {
         m0.setPower(speed0 * power + P);
-        m1.setPower(speed1 * power + P);
-        m2.setPower(speed2 * power + P);
+        m1.setPower(speed1 * power - P);
+        m2.setPower(speed2 * power - P);
         m3.setPower(speed3 * power + P);
     }
 }
