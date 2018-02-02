@@ -18,6 +18,13 @@ class CryptoPatterns {
             { GREY, BROWN, GREY }
     };
 
+    static final int[][] FROG_INV = new int[][] {
+            { GREY, BROWN, GREY },
+            { BROWN, GREY, BROWN },
+            { GREY, BROWN, GREY },
+            { BROWN, GREY, BROWN }
+    };
+
     static final int[][] BIRD = new int[][] {
             { GREY, BROWN, GREY },
             { BROWN, GREY, BROWN },
@@ -25,11 +32,25 @@ class CryptoPatterns {
             { GREY, BROWN, GREY },
     };
 
-    static final int[][] SNAKE = new int[][] {
+    static final int[][] BIRD_INV = new int[][] {
+            { BROWN, GREY, BROWN },
+            { GREY, BROWN, GREY },
+            { GREY, BROWN, GREY },
+            { BROWN, GREY, BROWN },
+    };
+
+    static final int[][] SNEK = new int[][] {
             { GREY, GREY, BROWN },
             { GREY, BROWN, BROWN },
             { BROWN, BROWN, GREY },
             { BROWN, GREY, GREY }
+    };
+
+    static final int[][] SNAKE_INV = new int[][] {
+            { BROWN, BROWN, GREY },
+            { BROWN, GREY, GREY },
+            { GREY, GREY, BROWN },
+            { GREY, BROWN, BROWN }
     };
 
     private CryptoPatterns(){}

@@ -1,11 +1,7 @@
 package org.firstinspires.ftc.teamcode.blockplacer;
 
-import com.sun.tools.javac.util.Pair;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoPatterns.*;
 import static org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns.*;
@@ -21,7 +17,7 @@ public class BlockPlacer {
      * Pattern definitions and preference with index 0 being highest preference.
      * Has no setter as not expected to change with starting position or alliance.
      */
-    private final int[][][] CryptoPatterns = new int[][][] { FROG, BIRD, SNAKE };
+    private final int[][][] CryptoPatterns = new int[][][] { FROG, FROG_INV, BIRD, BIRD_INV, SNEK, SNAKE_INV };
     private int CurrentPattern = 0; // The index of pattern being used by ai in CryptoPatterns.
     public int[][] getPattern(){ return CryptoPatterns[CurrentPattern]; }
 
