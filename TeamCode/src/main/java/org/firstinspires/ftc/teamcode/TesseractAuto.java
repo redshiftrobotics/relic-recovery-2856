@@ -47,6 +47,9 @@ public class TesseractAuto extends LinearOpMode {
     private DigitalChannel sideSwitch;
     private DigitalChannel frontSwitch;
 
+    // the change in distance we want to travel such that our alignment tool goes next to he crypto box
+    private static final int RIGHT_COLUMN_SEAT_OFFSET = 140;
+
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
 
@@ -89,9 +92,13 @@ public class TesseractAuto extends LinearOpMode {
 
         depositBlock();
 
-//        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
-//            collectBlocks();
-//        }
+
+        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
+            collectBlocks();
+        } else {
+            lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
+            rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+        }
     }
 
     void initialize() {
@@ -121,8 +128,6 @@ public class TesseractAuto extends LinearOpMode {
         // Get hardware devices
         rTentacle = hardwareMap.servo.get("rTentacle");
         lTentacle = hardwareMap.servo.get("lTentacle");
-
-//        hardwareMap.servo.get("magic").setPosition(ServoValue.MAGIC_IN);
 
         // Initialize mechanum chassis.
         m = new MechanumChassis(
@@ -158,6 +163,17 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     void depositBlock() {
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
+        m.homeToCryptoColumn(frontSwitch, sideSwitch);
+        lLift.setPower(-1);
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
+        sleep(1000);
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+
+        /*
         m.powerConstant = 0.5f;
         m.setTweenTime(0);
         moveVec.SetComponents(0, 1);
@@ -181,6 +197,7 @@ public class TesseractAuto extends LinearOpMode {
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
         m.run(700, 0, 1);
+        */
 
     }
 
@@ -220,8 +237,8 @@ public class TesseractAuto extends LinearOpMode {
 
             // Update the drive team.
             telemetry.addData("Starting Position: ", startPos);
-            telemetry.addData("Upper Block Sensor: ", upperBlock.getDistance(DistanceUnit.CM));
             telemetry.addData("Jewel Color Sensor Connected ", jsConnected);
+            telemetry.addData("side, front", sideSwitch.getState() + " " + frontSwitch.getState());
             telemetry.update();
         }
     }
@@ -261,7 +278,7 @@ public class TesseractAuto extends LinearOpMode {
 
     private void navigateToColumn(RelicRecoveryVuMark mark) {
 
-        long unknownDefault = FAR_OFFSET;
+        long unknownDefault = CENTER_OFFSET;
         long unknownADefault = A_NEAR_OFFSET;
 
         telemetry.log().add("Executing on position B");
@@ -345,17 +362,6 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void collectBlocks() {
-
-        /**
-         *  New solution... Go forward running intake and belting until a block is seen by the "lowerBlock" sensor. Then simultaneously
-         *  - Run belting until "upperBlock" sees a block.
-         *  - When "lowerBlock" no longer sees a block, go forward running INTAKE ONLY (belting should be controlled by the aforementioned other check) until a block is seen by the "lowerBlock" sensor.
-         *  As soon as the second block is seen in the intake, all of the above can be terminated. The robot should then return to the crypto box and
-         *  PUSH AGAINST THE FIRST BLOCK and back off a certain encoder count (or better yet, use a REV distance sensor to get the value by looking at the first scored block).
-         *  The distance between the robot and the first scored block should now be such that running the belting with NO EXTRA MOVEMENTS, can score BOTH BLOCKS...
-         *  So the final action is to run the belting and intake while staying still, and finishing with a super silky push in and back away.
-         */
-
         lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
         rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
 
@@ -367,61 +373,73 @@ public class TesseractAuto extends LinearOpMode {
 
         moveVec.SetComponents(0, 1);
         m.setDirectionVector(moveVec);
-        m.run(650, 0, 1, true);
+        m.run(650, 0, 1, false);
 
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
         m.run(950, 0, 1, true);
 
-        moveVec.SetComponents(0, 1);
+        /////// MAYBE NEED A SIDE MODIFIER HERE
+        moveVec.SetComponents(1, 0);
         m.setDirectionVector(moveVec);
-
+        m.run(500, 0.4f, 0.4f); // bump over to put align back in
 
         rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
         m.homeToCryptoColumn(frontSwitch, sideSwitch);
-
-        // This should already happen while driving, but just in case... Run belting until block ready to stage.
-        while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
-            lLift.setPower(-1);
-        }
 
         lLift.setPower(-1);
         lCollect.setPower(.8);
         rCollect.setPower(-.8);
 
-        sleep(3000);
-
-        lLift.setPower(0);
-        lCollect.setPower(0);
-        rCollect.setPower(0);
-
+        sleep(4000);
         hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
-        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
+        hardwareMap.servo.get("flipperuLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
+        sleep(2000);
+        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_DOWN);
 
-        m.setTweenTime(0);
-        m.powerConstant = 0.4f;
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(350, 0, 1);
-        m.setTweenTime(TWEEN_TIME);
-
-        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
-
-        m.setTweenTime(0);
-        moveVec.SetComponents(0, 1);
-        m.setDirectionVector(moveVec);
-        m.run(500, 0, 1, true);
-        m.powerConstant = 0.9f;
-        m.setTweenTime(TWEEN_TIME);
-
-        m.powerConstant = 0.5f;
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(800, 0, 1, true);
+//        // This should already happen while driving, but just in case... Run belting until block ready to stage.
+//        while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
+//            lLift.setPower(-1);
+//        }
+//
+//        lLift.setPower(-1);
+//        lCollect.setPower(.8);
+//        rCollect.setPower(-.8);
+//
+//        sleep(3000);
+//
+//        lLift.setPower(0);
+//        lCollect.setPower(0);
+//        rCollect.setPower(0);
+//
+//        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
+//        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
+//
+//        m.setTweenTime(0);
+//        m.powerConstant = 0.4f;
+//        moveVec.SetComponents(0, -1);
+//        m.setDirectionVector(moveVec);
+//        m.run(350, 0, 1);
+//        m.setTweenTime(TWEEN_TIME);
+//
+//        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+//
+//        m.setTweenTime(0);
+//        moveVec.SetComponents(0, 1);
+//        m.setDirectionVector(moveVec);
+//        m.run(500, 0, 1, true);
+//        m.powerConstant = 0.9f;
+//        m.setTweenTime(TWEEN_TIME);
+//
+//        m.powerConstant = 0.5f;
+//        moveVec.SetComponents(0, -1);
+//        m.setDirectionVector(moveVec);
+//        m.run(800, 0, 1, true);
     }
 
     private void balanceToColumn(long columnOffset) {
-        m.run(CENTER_MOVE_TIME + columnOffset, 0, 1);
+        m.run(CENTER_MOVE_TIME + columnOffset - RIGHT_COLUMN_SEAT_OFFSET, 0, 1);
         telemetry.log().add("Finished running, starting turn");
         m.setRotationTarget(90 * sideModifier);
         m.turnToTarget();

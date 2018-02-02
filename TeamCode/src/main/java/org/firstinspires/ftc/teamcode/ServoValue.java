@@ -19,7 +19,7 @@ public class ServoValue {
 
     // TUNE THESE
     static float RIGHT_ALIGN_DOWN = 1f;
-    static float RIGHT_ALIGN_UP = 0f;
+    static float RIGHT_ALIGN_UP = 0.6f; //0.4
 
     static float RELIC_ARM_STORAGE = .7f;
     static float RELIC_ARM_OUT = .61f;

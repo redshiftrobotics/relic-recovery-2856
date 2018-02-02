@@ -72,15 +72,13 @@ public class MechanumChassis {
         this.context = context;
     }
 
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3, BNO055IMU i) {
+    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3) {
         this.m0 = m0;
         this.m1 = m1;
         this.m2 = m2;
         this.m3 = m3;
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        this.imu = i;
-        this.imu.initialize(parameters);
 
         initMotors();
     }
@@ -264,31 +262,26 @@ public class MechanumChassis {
     void homeToCryptoColumn(DigitalChannel frontSwitch, DigitalChannel sideSwitch) {
         float P;
         Vector2D movementDirection = new Vector2D(0, 1);
+        setDirectionVector(movementDirection);
 
-        // DigitalChannel.getState() evaluates to false when switch is pressed
-        while (frontSwitch.getState() && context.opModeIsActive()) {
+        while(frontSwitch.getState() && context.opModeIsActive()) {
             P = getOffset(getRotation(), rotationTarget) / 30;
-            setMotorPowers(0.9f, P);
+            setMotorPowers(0.4f, P);
         }
 
-        while (!(!frontSwitch.getState() && !sideSwitch.getState()) && context.opModeIsActive()) {
-            context.telemetry.addData("frontSwitch", frontSwitch.getState());
-            context.telemetry.addData("sideSwitch", sideSwitch.getState());
-            context.telemetry.update();
-            if(!frontSwitch.getState()) {
-                movementDirection.SetYComponent(0);
-            } else {
-                movementDirection.SetYComponent(Math.sqrt(2)/2);
-            }
-            if(!sideSwitch.getState()) {
-                movementDirection.SetXComponent(0);
-            } else {
-                movementDirection.SetXComponent(-Math.sqrt(2)/2);
-            }
+        movementDirection = new Vector2D(0, -1);
+        setDirectionVector(movementDirection);
+        float oldTween = this.tweenTime;
+        tweenTime = 0;
+        run(200, 0, 0.5f);
+        tweenTime = oldTween;
 
-            setDirectionVector(movementDirection);
+        movementDirection = new Vector2D(-1, 0);
+        setDirectionVector(movementDirection);
+
+        while(sideSwitch.getState() && context.opModeIsActive()) {
             P = getOffset(getRotation(), rotationTarget) / 30;
-            setMotorPowers(0.6f, P);
+            setMotorPowers(0.35f, P);
         }
         stopMotors();
     }

@@ -22,7 +22,7 @@ public class ServoTester extends LinearOpMode {
         float increment = 0.1f;
         float lv = 0f;
         float rv = .8f;
-        Servo leftServo = hardwareMap.servo.get("armServo");
+        Servo leftServo = hardwareMap.servo.get("rAlignServo");
         Servo rightServo = hardwareMap.servo.get("clawServo");
         waitForStart();
 

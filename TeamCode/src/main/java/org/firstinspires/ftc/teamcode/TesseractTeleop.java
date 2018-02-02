@@ -104,8 +104,7 @@ public class TesseractTeleop extends OpMode {
             hardwareMap.dcMotor.get("m0"),
             hardwareMap.dcMotor.get("m1"),
             hardwareMap.dcMotor.get("m2"),
-            hardwareMap.dcMotor.get("m3"),
-            hardwareMap.get(BNO055IMU.class, "imu")
+            hardwareMap.dcMotor.get("m3")
         );
 
         telemetry.addData("Status", "Initialized");
@@ -127,12 +126,12 @@ public class TesseractTeleop extends OpMode {
     }
 
     private void driveTrainControl(Gamepad pad) {
-        if(rotationLock.debounce(pad.right_stick_button)) {
+//        if(rotationLock.debounce(pad.right_stick_button)) {
             m.addJoystickRotation(pad.left_stick_x);
             m.setMotorPowers();
-        } else {
-            m.lockRotation();
-        }
+//        } else {
+//            m.lockRotation();
+//        }
     }
 
     /***
