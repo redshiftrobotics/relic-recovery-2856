@@ -18,7 +18,7 @@ public class BlockPlacerTest extends TestCase {
         // Test switching patterns (Frog -> Snake)
         bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
         assertEquals( CryptoboxColumns.LEFT, bop.getNextBlockColumn(BlockColors.GREY) );
-        assertEquals( CryptoPatterns.SNAKE, bop.getPattern());
+        assertEquals( CryptoPatterns.SNEK, bop.getPattern());
 
         // Test least movement method
         bop = new BlockPlacer( CryptoboxColumns.MIDDLE, BlockColors.GREY );
