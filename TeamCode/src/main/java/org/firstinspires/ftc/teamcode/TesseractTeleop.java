@@ -202,7 +202,7 @@ public class TesseractTeleop extends OpMode {
     }
 
     // Uses right joystick
-    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = 0.05; // Needs to be calibrated (maybe)
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = .05; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
         relic.setPower(-pad.right_stick_y);
 
