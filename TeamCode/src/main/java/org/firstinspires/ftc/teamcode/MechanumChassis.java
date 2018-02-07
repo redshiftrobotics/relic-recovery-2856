@@ -251,6 +251,8 @@ public class MechanumChassis {
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             if(runBelting) {
                 safeRunBelting();
+            } else {
+                lLift.setPower(0);
             }
             elapsedTime = System.currentTimeMillis() - start;
             P = getOffset(getRotation(), rotationTarget) / 30;
@@ -280,9 +282,10 @@ public class MechanumChassis {
         setDirectionVector(movementDirection);
 
         while(sideSwitch.getState() && context.opModeIsActive()) {
-            P = getOffset(getRotation(), rotationTarget) / 30;
-            setMotorPowers(0.35f, P);
+            P = getOffset(getRotation(), rotationTarget) / 20;
+            setMotorPowers(0.25f, P);
         }
+
         stopMotors();
     }
 

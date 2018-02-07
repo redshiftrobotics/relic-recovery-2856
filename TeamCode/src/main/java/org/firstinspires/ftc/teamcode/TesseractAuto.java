@@ -56,6 +56,7 @@ public class TesseractAuto extends LinearOpMode {
 
     // the change in distance we want to travel such that our alignment tool goes next to he crypto box
     private static final int COLUMN_SEAT_OFFSET = 140;
+    private static final int COLUMN_STRAFE_SEAT_OFFSET = 300;
 
     private static final int TWEEN_TIME = 700;
     private static final int SERVO_DEPLOYMENT_TIME = 500;
@@ -102,13 +103,12 @@ public class TesseractAuto extends LinearOpMode {
 
 
 
-        depositBlock();
+        depositBlock(mark);
 
 
         if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
             collectBlocks();
-            firstScoreToCryptoZero(mark);
-            scoreMoreBlocks();
+            scoreNextColumn(mark);
         } else {
             lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
             rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
@@ -180,9 +180,19 @@ public class TesseractAuto extends LinearOpMode {
         m.initScoring(lLift, lCollect, rCollect, upperBlock);
     }
 
-    void depositBlock() {
-        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
-        m.homeToCryptoColumn(lowerFrontSwitch, sideSwitch);
+    void depositBlock(RelicRecoveryVuMark mark) {
+        if(mark == RelicRecoveryVuMark.RIGHT) {
+            topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
+            rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
+            sleep(SERVO_DEPLOYMENT_TIME);
+            m.homeToCryptoColumn(lowerFrontSwitch, sideSwitch);
+        } else {
+            topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
+            rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+            sleep(SERVO_DEPLOYMENT_TIME);
+            m.homeToCryptoColumn(upperFrontSwitch, sideSwitch);
+        }
+
         lLift.setPower(-1);
         hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
         hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
@@ -190,6 +200,14 @@ public class TesseractAuto extends LinearOpMode {
         hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
         hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_DOWN);
         rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+
+        moveVec.SetComponents(0, -1);
+        m.setDirectionVector(moveVec);
+        m.run(500, 0.2f, 0.2f);
+
+        topAlign.setPosition(ServoValue.TOP_ALIGN_IN);
+        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
+
     }
 
     private int getSideCoefficient(StartPosition pos) {
@@ -386,38 +404,15 @@ public class TesseractAuto extends LinearOpMode {
         moveVec.SetComponents(0, -1);
         m.setDirectionVector(moveVec);
         m.run(950, 0, 1, true);
-    }
 
-    // Starts at far right of crypto
-    private void scoreMoreBlocks() {
-        while((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && opModeIsActive()) {
+        while (upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) {
             lLift.setPower(-1);
             lCollect.setPower(.8);
             rCollect.setPower(-.8);
         }
-
         lLift.setPower(0);
         lCollect.setPower(0);
         rCollect.setPower(0);
-        moveVec.SetComponents(-1, 0);
-        m.setDirectionVector(moveVec);
-
-        // If the first block is grey.
-        if((upperBlockCS.red() + upperBlockCS.blue() + upperBlockCS.green())/3 > 35) {
-            m.run(getZeroToColumnDistance(bop.getNextBlockColumn(BlockColors.GREY)), 0, 1);
-        } else {
-            m.run(getZeroToColumnDistance(bop.getNextBlockColumn(BlockColors.BROWN)), 0, 1);
-        }
-
-        lLift.setPower(-1);
-        lCollect.setPower(.8);
-        rCollect.setPower(-.8);
-        sleep(4000);
-        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_UP);
-        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_UP);
-        sleep(2000);
-        hardwareMap.servo.get("flipperRight").setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
-        hardwareMap.servo.get("flipperLeft").setPosition(ServoValue.FLIPPER_LEFT_DOWN);
     }
 
     private int noahTheColumn(RelicRecoveryVuMark mark){
@@ -432,44 +427,81 @@ public class TesseractAuto extends LinearOpMode {
         return CryptoboxColumns.INVALID;
     }
 
-    private void scoreNextColumn(RelicRecoveryVuMark startColumn, int firstBlockColor, int secondBlockColor) {
+    private void scoreNextColumn(RelicRecoveryVuMark startColumn) {
+        // If the first block is grey.
+        int firstBlockColor;
+        int secondBlockColor;
+        if((upperBlockCS.red() + upperBlockCS.blue() + upperBlockCS.green())/3 > 35) {
+            firstBlockColor = BlockColors.GREY;
+        } else {
+            firstBlockColor = BlockColors.BROWN;
+        }
+
+        /// GET SECOND BLOCK COLOR HERE
+        if(true) {
+            secondBlockColor = BlockColors.BROWN;
+        } else {
+            secondBlockColor = BlockColors.GREY;
+        }
+
+
         long toZero = 0;
         long zeroToColumn = 0;
 
         int[] columns = BlockPlacerTree.getBlockPlacement(noahTheColumn(startColumn), firstBlockColor, secondBlockColor);
 
+        telemetry.log().add("Column: ", columns[0] + ":   Reference: lcr -- " + CryptoboxColumns.LEFT + " " + CryptoboxColumns.MIDDLE + " " + CryptoboxColumns.RIGHT);
+
         switch (startColumn) {
             case LEFT:
                 toZero = (STRAFE_SINGLE_COLUMN_DISTANCE * 2);
+                break;
             case CENTER:
                 toZero = STRAFE_SINGLE_COLUMN_DISTANCE;
+                break;
             case RIGHT:
                 toZero = 0;
+                break;
         }
 
         switch (columns[0]) {
             case CryptoboxColumns.LEFT:
                 zeroToColumn = (STRAFE_SINGLE_COLUMN_DISTANCE * 2);
+                break;
             case CryptoboxColumns.MIDDLE:
                 zeroToColumn = STRAFE_SINGLE_COLUMN_DISTANCE;
+                break;
             case CryptoboxColumns.RIGHT:
                 zeroToColumn = 0;
+                break;
         }
 
 
         long moveDistance = toZero - zeroToColumn;
         int directionModifier = 1;
-        if(moveDistance < 0) directionModifier = -1;
+        telemetry.log().add("moveDistance:" + moveDistance);
+        if(moveDistance < 0) {
+            moveDistance = -moveDistance;
+            directionModifier = -1;
+        }
+        moveVec.SetComponents(directionModifier, 0);
+        m.setDirectionVector(moveVec);
 
-        m.run((moveDistance*directionModifier)+COLUMN_SEAT_OFFSET, 0, 1);
+        sleep(5000);
+
+        m.run((moveDistance*directionModifier)+COLUMN_STRAFE_SEAT_OFFSET, 0, 1);
 
         if(columns[0] == CryptoboxColumns.RIGHT) {
+            topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
             rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
+
+            m.homeToCryptoColumn(lowerFrontSwitch, sideSwitch);
         } else {
             topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
-        }
+            rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
 
-        m.homeToCryptoColumn(lowerFrontSwitch, sideSwitch);
+            m.homeToCryptoColumn(upperFrontSwitch, sideSwitch);
+        }
 
         rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
         topAlign.setPosition(ServoValue.TOP_ALIGN_IN);
@@ -483,56 +515,6 @@ public class TesseractAuto extends LinearOpMode {
             lLift.setPower(-1);
             sleep(500);
         }
-    }
-
-    private long getZeroToColumnDistance(int column) {
-        switch (column) {
-            case CryptoboxColumns.LEFT:
-                return (STRAFE_SINGLE_COLUMN_DISTANCE * 2);
-            case CryptoboxColumns.MIDDLE:
-                return STRAFE_SINGLE_COLUMN_DISTANCE;
-            case CryptoboxColumns.RIGHT:
-                return 0;
-        }
-        return 0;
-    }
-
-    private void firstScoreToCryptoZero(RelicRecoveryVuMark mark) {
-        lLift.setPower(0);
-        lCollect.setPower(0);
-        rCollect.setPower(0);
-
-        moveVec.SetComponents(1, 0);
-        m.setDirectionVector(moveVec);
-
-        // get off the right edge of the cryptobox
-
-        long singleColumnShift = 1500;
-
-        switch (mark) {
-            case LEFT:
-                m.run((singleColumnShift * 2) + COLUMN_SEAT_OFFSET, 0, 1);
-                break;
-            case CENTER:
-                m.run(singleColumnShift + COLUMN_SEAT_OFFSET, 0, 1);
-                break;
-            case RIGHT:
-                m.run(COLUMN_SEAT_OFFSET, 0, 1);
-                break;
-            case UNKNOWN:
-                m.run(singleColumnShift + COLUMN_SEAT_OFFSET, 0, 1);
-                break;
-        }
-
-        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_DOWN);
-        m.homeToCryptoColumn(lowerFrontSwitch, sideSwitch);
-        rAlignServo.setPosition(ServoValue.RIGHT_ALIGN_UP);
-
-        // This action helps the alignment tool come back up.
-
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(400, .4f, .4f);
     }
 
     private void balanceToColumn(long columnOffset) {
