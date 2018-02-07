@@ -29,7 +29,6 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -83,12 +82,12 @@ public class TesseractTeleop extends OpMode {
         armServo = hardwareMap.servo.get("armServo");
         armServo.setPosition(ServoValue.RELIC_ARM_STORAGE);
         clawServo = hardwareMap.servo.get("clawServo");
-        clawServo.setPosition(ServoValue.RELIC_CLAW_IN);
+        clawServo.setPosition(ServoValue.RELIC_CLAW_GRAB);
 
         lFlip = hardwareMap.servo.get("lFlip");
         rFlip = hardwareMap.servo.get("rFlip");
-        lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
-        rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+        lFlip.setPosition(ServoValue.LEFT_COLLECT_DOWN);
+        rFlip.setPosition(ServoValue.RIGHT_COLLECT_DOWN);
 
         lCollect = hardwareMap.dcMotor.get("lCollect");
         rCollect = hardwareMap.dcMotor.get("rCollect");
@@ -113,9 +112,8 @@ public class TesseractTeleop extends OpMode {
 
     @Override
     public void loop() {
-        Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
-        m.setDirectionVector(v);
 
+        m.setDirectionVectorComponents(-gamepad1.right_stick_x, gamepad1.right_stick_y);
         driveTrainControl(gamepad1);
 
         liftControl(gamepad2);
@@ -142,11 +140,11 @@ public class TesseractTeleop extends OpMode {
 
         // HACK TO GIVE TURNER FLIP
         if(pad.dpad_down) {
-            lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
-            rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+            lFlip.setPosition(ServoValue.LEFT_COLLECT_DOWN);
+            rFlip.setPosition(ServoValue.RIGHT_COLLECT_DOWN);
         } else if (pad.dpad_up) {
-            lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
-            rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
+            lFlip.setPosition(ServoValue.LEFT_COLLECT_UP);
+            rFlip.setPosition(ServoValue.RIGHT_COLLECT_UP);
         }
 
         lBelting.setPower(-pad.left_trigger);
@@ -158,11 +156,11 @@ public class TesseractTeleop extends OpMode {
 
     private void intakeControl(Gamepad pad) {
         if(pad.dpad_down) {
-            lFlip.setPosition(ServoValue.LEFT_FLIP_DOWN);
-            rFlip.setPosition(ServoValue.RIGHT_FLIP_DOWN);
+            lFlip.setPosition(ServoValue.LEFT_COLLECT_DOWN);
+            rFlip.setPosition(ServoValue.RIGHT_COLLECT_DOWN);
         } else if (pad.dpad_up) {
-            lFlip.setPosition(ServoValue.LEFT_FLIP_UP);
-            rFlip.setPosition(ServoValue.RIGHT_FLIP_UP);
+            lFlip.setPosition(ServoValue.LEFT_COLLECT_UP);
+            rFlip.setPosition(ServoValue.RIGHT_COLLECT_UP);
         }
 
 
@@ -197,7 +195,7 @@ public class TesseractTeleop extends OpMode {
     // Uses X (inc), Y (dec)
     private void clawServoControl(Gamepad pad) {
         if(pad.x || pad.b ) {
-            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_OUT : ServoValue.RELIC_CLAW_IN );
+            clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_RELEASE : ServoValue.RELIC_CLAW_GRAB);
         }
     }
 
@@ -207,7 +205,7 @@ public class TesseractTeleop extends OpMode {
         relic.setPower(-pad.right_stick_y);
 
 //        if (pad.right_stick_y >= 0.05) {
-//            clawServo.setPosition(ServoValue.RELIC_CLAW_OUT);
+//            clawServo.setPosition(ServoValue.RELIC_CLAW_RELEASE);
 //        }
 
         if (Math.abs(pad.right_stick_y) >= 0.05) {
