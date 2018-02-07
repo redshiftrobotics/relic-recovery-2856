@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.blockplacer.BlockColors;
 import org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns;
 
 /**
@@ -69,6 +70,8 @@ public class MechanumChassis {
     Servo rCollectServo;
     DistanceSensor upperBlock;
     ColorSensor upperBlockCS;
+    DistanceSensor lowerBlock;
+    ColorSensor lowerBlockCS;
     Servo flipperLeft;
     Servo flipperRight;
 
@@ -173,6 +176,9 @@ public class MechanumChassis {
 
         upperBlock = hardwareMap.get(DistanceSensor.class, "upperBlock");
         upperBlockCS = hardwareMap.get(ColorSensor.class, "upperBlock");
+
+        lowerBlock = hardwareMap.get(DistanceSensor.class, "lowerBlock");
+        lowerBlockCS = hardwareMap.get(ColorSensor.class, "lowerBlock");
 
         sideSwitch = hardwareMap.get(DigitalChannel.class, "upperSide");
         upperFrontSwitch = hardwareMap.get(DigitalChannel.class, "upperFront");
@@ -385,6 +391,22 @@ public class MechanumChassis {
     void deployFlipper() {
         flipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
         flipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+    }
+
+    int getUpperBlockColor() {
+        if((upperBlockCS.red() + upperBlockCS.blue() + upperBlockCS.green())/3 > 35) {
+            return BlockColors.GREY;
+        } else {
+            return BlockColors.BROWN;
+        }
+    }
+
+    int getLowerBlockColor() {
+        if((lowerBlockCS.red() + lowerBlockCS.blue() + lowerBlockCS.green())/3 > 35) {
+            return BlockColors.GREY;
+        } else {
+            return BlockColors.BROWN;
+        }
     }
 
     void homeToCryptoColumn() {

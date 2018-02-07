@@ -128,9 +128,17 @@ public class TesseractAuto extends LinearOpMode {
             // Validate all sensors are operational.
             telemetry.addData("Starting Position: ", startPos);
             telemetry.addData("Jewel Color Sensor: ", m.js.blue());
-            telemetry.addData("upperBlock: ", m.upperBlock.getDistance(DistanceUnit.CM));
-            telemetry.addData("upperBlockCS: ", m.upperBlockCS.blue());
-            telemetry.addData("Switches (side, topFront, lowerFront)", m.sideSwitch.getState() + " " + m.upperFrontSwitch.getState() + " " + m.lowerFrontSwitch.getState());
+            telemetry.addData("Scoring Sensors (upper, lower):",
+                m.upperBlock.getDistance(DistanceUnit.CM)
+                + " | " + m.upperBlockCS.blue()
+                + " | " + m.lowerBlock.getDistance(DistanceUnit.CM)
+                + " | " + m.lowerBlockCS.blue()
+            );
+            telemetry.addData("Switches (side, topFront, lowerFront)",
+                m.sideSwitch.getState()
+                + " | " + m.upperFrontSwitch.getState()
+                + " | " + m.lowerFrontSwitch.getState()
+            );
             telemetry.update();
         }
     }
@@ -229,8 +237,6 @@ public class TesseractAuto extends LinearOpMode {
                     break;
             }
         }
-
-
     }
 
     private void collectBlocks() {
@@ -259,31 +265,13 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void scoreNextColumn() {
-        // If the first block is grey.
-        int firstBlockColor;
-        int secondBlockColor;
-        if((m.upperBlockCS.red() + m.upperBlockCS.blue() + m.upperBlockCS.green())/3 > 35) {
-            firstBlockColor = BlockColors.GREY;
-            telemetry.log().add("First block: GREY");
-        } else {
-            firstBlockColor = BlockColors.BROWN;
-            telemetry.log().add("First block: BROWN");
-        }
-        telemetry.update();
-
-        /// TODO: GET SECOND BLOCK COLOR HERE
-        if(true) {
-            secondBlockColor = BlockColors.GREY;
-        } else {
-            secondBlockColor = BlockColors.BROWN;
-        }
-
         long toZero = 0;
         long zeroToColumn = 0;
 
-        int[] columns = BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), firstBlockColor, secondBlockColor);
+        int[] columns = BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.getUpperBlockColor(), m.getLowerBlockColor());
 
         telemetry.log().add("Column: ", columns[0] + ":   Reference: lcr -- " + CryptoboxColumns.LEFT + " " + CryptoboxColumns.MIDDLE + " " + CryptoboxColumns.RIGHT);
+        telemetry.update();
 
         switch (mark) {
             case LEFT:
@@ -313,6 +301,7 @@ public class TesseractAuto extends LinearOpMode {
         long moveDistance = toZero - zeroToColumn;
         int directionModifier = 1;
         telemetry.log().add("moveDistance:" + moveDistance);
+        telemetry.update();
         if(moveDistance < 0) {
             moveDistance = -moveDistance;
             directionModifier = -1;
