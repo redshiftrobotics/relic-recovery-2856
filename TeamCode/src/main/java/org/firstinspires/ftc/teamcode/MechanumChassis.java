@@ -4,7 +4,6 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -64,6 +63,7 @@ public class MechanumChassis {
 
     // Scoring mechanism hardware
     DcMotor lift;
+    DcMotor relic;
     DcMotor lCollect;
     DcMotor rCollect;
     Servo lCollectServo;
@@ -92,6 +92,8 @@ public class MechanumChassis {
     DigitalChannel sideSwitch;
     DigitalChannel lowerFrontSwitch;
     DigitalChannel upperFrontSwitch;
+
+    int lastLowerBlockColor = -1;
 
     // Useful constant
     public final int SERVO_DEPLOYMENT_TIME = 500;
@@ -144,6 +146,8 @@ public class MechanumChassis {
         lCollectServo = hardwareMap.servo.get("lFlip");
         rCollectServo = hardwareMap.servo.get("rFlip");
         raiseIntake();
+
+        relic = hardwareMap.dcMotor.get("relic");
 
         lowerAlign = hardwareMap.servo.get("rAlignServo");
         lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
@@ -296,9 +300,9 @@ public class MechanumChassis {
      */
     public void jewelKick(int direction) {
         // Tentacles are deployed elsewhere for color detection in main OpMode.
-        encoderTurn(direction, 700);
-        stowTentacles();
         encoderTurn(-direction, 700);
+        stowTentacles();
+        encoderTurn(direction, 700);
     }
 
     public void encoderTurn(int direction, long turnTime) {
@@ -313,18 +317,35 @@ public class MechanumChassis {
     }
 
     void safeIntakeAsync() {
-        if(upperBlock != null) {
-            context.telemetry.addData("upperBlock is non-null", "");
-            if (upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) {
+        context.telemetry.addData("upperColor, lowerColor", getUpperBlockColor() + ",  " + getLowerBlockColor());
+        context.telemetry.update();
+        if(upperBlock != null && lowerBlock != null) {
+            if (!hasLowerBlock()) {
+                lift.setPower(0);
+                lCollect.setPower(.8);
+                rCollect.setPower(0);
+            } else if (hasLowerBlock() && canLift()) {
                 lift.setPower(1);
                 lCollect.setPower(.8);
                 rCollect.setPower(.8);
+            } else if (hasLowerBlock() && !canLift()) {
+                lift.setPower(0);
+                lCollect.setPower(0);
+                rCollect.setPower(0);
             } else {
                 lift.setPower(0);
                 lCollect.setPower(0);
                 rCollect.setPower(0);
             }
         }
+    }
+
+    boolean canLift() {
+        return upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM));
+    }
+
+    boolean hasLowerBlock() {
+        return !Double.isNaN(lowerBlock.getDistance(DistanceUnit.CM)) && !(lowerBlock.getDistance(DistanceUnit.CM) > 30);
     }
 
     void intakeUntilStaged() {
@@ -366,7 +387,7 @@ public class MechanumChassis {
     }
 
     void deployAlignment(int column) {
-        topAlign.setPosition((column == CryptoboxColumns.RIGHT) ? ServoValue.TOP_ALIGN_OUT-0.07f : ServoValue.TOP_ALIGN_OUT);
+        topAlign.setPosition((column == CryptoboxColumns.RIGHT) ? ServoValue.TOP_ALIGN_OUT-0.14f : ServoValue.TOP_ALIGN_OUT);
         lowerAlign.setPosition((column == CryptoboxColumns.RIGHT) ? ServoValue.LOWER_ALIGN_OUT : ServoValue.LOWER_ALIGN_IN);
         context.sleep(SERVO_DEPLOYMENT_TIME);
     }
@@ -394,7 +415,15 @@ public class MechanumChassis {
     }
 
     int getUpperBlockColor() {
-        if((upperBlockCS.red() + upperBlockCS.blue() + upperBlockCS.green())/3 > 35) {
+        if((upperBlockCS.green() + upperBlockCS.blue() + upperBlockCS.red()) / 3 > 25) {
+            return BlockColors.GREY;
+        } else {
+            return BlockColors.BROWN;
+        }
+    }
+
+    private int getTemporaryLowerBlockColor() {
+        if((lowerBlockCS.green() + lowerBlockCS.blue() + lowerBlockCS.red()) / 3 > 20) { //25
             return BlockColors.GREY;
         } else {
             return BlockColors.BROWN;
@@ -402,11 +431,7 @@ public class MechanumChassis {
     }
 
     int getLowerBlockColor() {
-        if((lowerBlockCS.red() + lowerBlockCS.blue() + lowerBlockCS.green())/3 > 35) {
-            return BlockColors.GREY;
-        } else {
-            return BlockColors.BROWN;
-        }
+        return lastLowerBlockColor;
     }
 
     void homeToCryptoColumn() {
