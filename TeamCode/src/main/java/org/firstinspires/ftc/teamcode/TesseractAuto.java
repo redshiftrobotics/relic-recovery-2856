@@ -83,11 +83,17 @@ public class TesseractAuto extends LinearOpMode {
 
         if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
             collectBlocks();
-            scoreNextColumn();
+            if(m.justPark) {
+                m.stowAlignment();
+                m.setDirectionVectorComponents(0, 1);
+                m.run(1500, 0.4f, 0.4f);
+            } else {
+                scoreNextColumn();
+            }
         }
 
         m.stowAlignment();
-        sleep(m.SERVO_DEPLOYMENT_TIME);
+        sleep(m.SERVO_DEPLOYMENT_TIME+500);
 
         // TODO: Give Mark (Cark?) compliments of the chef
     }
@@ -261,7 +267,7 @@ public class TesseractAuto extends LinearOpMode {
         m.run(1200, 0, 1, true);
 
         m.setDirectionVectorComponents(0, -1);
-        m.run(950, 0, 1, true);
+        m.run(1100, 0, 1, true);
         m.setDirectionVectorComponents(0, 1);
         m.run(650, 0, 1, true);
 
@@ -368,7 +374,7 @@ public class TesseractAuto extends LinearOpMode {
                 break;
             case CENTER:
                 m.setDirectionVectorComponents(-1, 0);
-                tDist = STRAFE_SINGLE_COLUMN_DISTANCE - 200;
+                tDist = STRAFE_SINGLE_COLUMN_DISTANCE - 150;
                 break;
             case RIGHT:
                 m.setDirectionVectorComponents(-1, 0);
@@ -388,7 +394,7 @@ public class TesseractAuto extends LinearOpMode {
         m.lift.setPower(0);
 
         m.setDirectionVectorComponents(0, -1);
-        m.run(700, 0.4f, 0.4f);
+        m.run(1400, 0.2f, 0.2f);
 
     }
 

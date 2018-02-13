@@ -107,6 +107,8 @@ public class MechanumChassis {
     public boolean debugModeEnabled = false;
     private LinearOpMode context;
 
+    boolean justPark = false;
+
     // Not setting to 1 allows for headroom for motors to reach requested velocities.
     public final float powerConstant = 0.9f;
 
@@ -322,8 +324,8 @@ public class MechanumChassis {
         if(upperBlock != null && lowerBlock != null) {
             if (!hasLowerBlock()) {
                 lift.setPower(0);
-                lCollect.setPower(.8);
-                rCollect.setPower(0);
+                lCollect.setPower(0);
+                rCollect.setPower(.8);
             } else if (hasLowerBlock() && canLift()) {
                 lift.setPower(1);
                 lCollect.setPower(.8);
@@ -349,7 +351,13 @@ public class MechanumChassis {
     }
 
     void intakeUntilStaged() {
+        long start = System.currentTimeMillis();
+        long timeout = 4000;
         while ((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && context.opModeIsActive()) {
+            if (System.currentTimeMillis() > start+timeout) {
+                justPark = true;
+                break;
+            }
             lift.setPower(1);
             lCollect.setPower(.8);
             rCollect.setPower(.8);
@@ -456,7 +464,10 @@ public class MechanumChassis {
         movementDirection = new Vector2D(-1, 0);
         setDirectionVector(movementDirection);
 
-        while(sideSwitch.getState() && context.opModeIsActive()) {
+        long start = System.currentTimeMillis();
+        long turnTimeout = 2000;
+
+        while(sideSwitch.getState() && context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
             P = getOffset(getRotation(), rotationTarget) / 20;
             setMotorPowers(0.25f, P);
         }

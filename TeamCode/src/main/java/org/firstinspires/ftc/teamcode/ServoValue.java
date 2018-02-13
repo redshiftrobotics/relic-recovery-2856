@@ -18,7 +18,7 @@ public class ServoValue {
 
 
     static float LOWER_ALIGN_OUT = 1f;
-    static float LOWER_ALIGN_IN = 0.4f;
+    static float LOWER_ALIGN_IN = 0.35f;
     static float TOP_ALIGN_IN = .1f;
     static float TOP_ALIGN_OUT = 1f;
 
