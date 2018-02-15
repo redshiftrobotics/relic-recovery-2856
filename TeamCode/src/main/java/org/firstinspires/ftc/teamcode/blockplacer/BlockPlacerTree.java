@@ -5,9 +5,9 @@ package org.firstinspires.ftc.teamcode.blockplacer;
  * All triple block auto placements
  */
 
-class BlockPlacerTree {
+public class BlockPlacerTree {
 
-    static int[] getBlockPlacement( int startingColumn, int blockTwoColor, int blockThreeColor )
+    public static int[] getBlockPlacement( int startingColumn, int blockTwoColor, int blockThreeColor )
     {
         if( blockTwoColor == BlockColors.GREY )
             return (blockThreeColor == BlockColors.GREY) ? CASE_ggg[ startingColumn ] : CASE_ggb[ startingColumn ];
