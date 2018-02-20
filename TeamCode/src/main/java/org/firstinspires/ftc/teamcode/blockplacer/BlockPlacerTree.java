@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.blockplacer;
 
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+
 import java.util.Arrays;
 
 /**
@@ -50,6 +52,16 @@ public class BlockPlacerTree {
             else
                 return (blockFourColor == BlockColors.GREY) ? CASE_gbbg[ startingColumn ] : CASE_gbbb[ startingColumn ];
         }
+    }
+
+    public static RelicRecoveryVuMark[] getBlockPlacement( RelicRecoveryVuMark startingColumn, int blockTwoColor, int blockThreeColor )
+    {
+        return CryptoboxColumns.toRelicRecoveryVuMarkDeep( getBlockPlacement( CryptoboxColumns.fromRelicRecoveryVuMark( startingColumn ), blockTwoColor, blockThreeColor ) );
+    }
+
+    public static RelicRecoveryVuMark[] getBlockPlacement( RelicRecoveryVuMark startingColumn, int blockTwoColor, int blockThreeColor, int blockFourColor )
+    {
+        return CryptoboxColumns.toRelicRecoveryVuMarkDeep( getBlockPlacement( CryptoboxColumns.fromRelicRecoveryVuMark( startingColumn ), blockTwoColor, blockThreeColor, blockFourColor ) );
     }
 
     private static final int[][] CASE_gggg = {
