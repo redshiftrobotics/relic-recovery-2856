@@ -19,7 +19,6 @@ public class TesseractAuto extends LinearOpMode {
 
     // the change in distance we want to travel such that our alignment tool goes next to he crypto box
     private static final int COLUMN_SEAT_OFFSET = 140;
-    private static final int COLUMN_STRAFE_SEAT_OFFSET = 300;
 
     private long STRAFE_SINGLE_COLUMN_DISTANCE = 1200;
 
@@ -75,7 +74,7 @@ public class TesseractAuto extends LinearOpMode {
 
         // Kick the jewel off.
         doJewel();
-//
+
         navigateToColumn();
         depositBlock();
 

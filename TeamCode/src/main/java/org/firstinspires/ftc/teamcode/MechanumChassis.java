@@ -200,8 +200,13 @@ public class MechanumChassis {
         m1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        m1.setDirection(DcMotor.Direction.REVERSE);
-        m2.setDirection(DcMotor.Direction.REVERSE);
+
+        // SETUP FOR 40s
+//        m1.setDirection(DcMotor.Direction.REVERSE);
+//        m2.setDirection(DcMotor.Direction.REVERSE);
+
+        m3.setDirection(DcMotor.Direction.REVERSE);
+        m0.setDirection(DcMotor.Direction.REVERSE);
     }
 
     private void stopMotors() {
