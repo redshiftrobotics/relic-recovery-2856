@@ -41,8 +41,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
     private MechanumChassis m;
-
     private Debouncer flipBounce;
+    private Debouncer slowBounce;
+    boolean slowDown = false;
     @Override
     public void init() {
         // Initialize drive-train with appropriate motors and OpMode context.
@@ -51,6 +52,7 @@ public class TesseractTeleop extends OpMode {
         m.lowerIntake();
 
         flipBounce = new Debouncer();
+        slowBounce = new Debouncer();
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -58,10 +60,8 @@ public class TesseractTeleop extends OpMode {
 
     @Override
     public void loop() {
-
-        m.setDirectionVectorComponents(-gamepad1.right_stick_x, gamepad1.right_stick_y);
+        m.setDirectionVectorComponents(-filterJoystick(gamepad1.right_stick_x), filterJoystick(gamepad1.right_stick_y));
         driveTrainControl(gamepad1);
-
         liftControl(gamepad2);
         relicControl(gamepad2);
 
@@ -70,12 +70,13 @@ public class TesseractTeleop extends OpMode {
     }
 
     private void driveTrainControl(Gamepad pad) {
-//        if(rotationLock.debounce(pad.right_stick_button)) {
-            m.addJoystickRotation(pad.left_stick_x);
-            m.setMotorPowers();
-//        } else {
-//            m.lockRotation();
-//        }
+        m.addJoystickRotation(filterJoystick(pad.left_stick_x));
+        m.setMotorPowers();
+        if(slowBounce.debounce(pad.right_stick_button)) {
+            slowDown = true;
+        } else {
+            slowDown = false;
+        }
     }
 
     /***
@@ -100,6 +101,16 @@ public class TesseractTeleop extends OpMode {
         }
     }
 
+    private double filterJoystick(float val) {
+        float expoK = 0.4f;
+        double output = ((1 - expoK) * Math.pow(val, 3) + expoK * val);
+        if (slowDown) {
+            return output*0.7;
+        } else {
+            return output;
+        }
+    }
+
     private void intakeControl(Gamepad pad) {
         if(pad.dpad_down) {
             m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_DOWN);
@@ -108,7 +119,6 @@ public class TesseractTeleop extends OpMode {
             m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_UP);
             m.rCollectServo.setPosition(ServoValue.RIGHT_COLLECT_UP);
         }
-
 
         m.rCollect.setPower(pad.right_trigger);
         m.lCollect.setPower(pad.left_trigger);
@@ -149,10 +159,6 @@ public class TesseractTeleop extends OpMode {
     private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = .05; // Needs to be calibrated (maybe)
     private void armExtensionControl(Gamepad pad) {
         m.relic.setPower(-pad.right_stick_y);
-
-//        if (pad.right_stick_y >= 0.05) {
-//            clawServo.setPosition(ServoValue.RELIC_CLAW_RELEASE);
-//        }
 
         if (Math.abs(pad.right_stick_y) >= 0.05) {
             m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);

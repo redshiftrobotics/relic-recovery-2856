@@ -17,17 +17,9 @@ public class TesseractAuto extends LinearOpMode {
     private MechanumChassis m;
     RelicRecoveryVuMark mark;
 
-    // the change in distance we want to travel such that our alignment tool goes next to he crypto box
-    private static final int COLUMN_SEAT_OFFSET = 140;
-
-    private long STRAFE_SINGLE_COLUMN_DISTANCE = 1200;
-
-    //2220 Perfectly centers, but we want to error to one side so we can use the button
-    private static final long CENTER_MOVE_TIME = 2225;
-    private static final long B_OFFSET = 325;
-    private static final long FAR_OFFSET = B_OFFSET;
-    private static final long NEAR_OFFSET = -B_OFFSET;
-    private static final long CENTER_OFFSET = 0;
+    private static long NEAR_OFFSET = 1500;
+    private static  long CENTER_OFFSET = 1650;
+    private static long FAR_OFFSET = 1900;
 
     private static long A_CENTER_OFFSET = 1300;
     private static long A_NEAR_OFFSET = 400;
@@ -58,13 +50,6 @@ public class TesseractAuto extends LinearOpMode {
         // Configuration.
         configurationLoop();
 
-//        m.lowerIntake();
-//        while(opModeIsActive()) {
-//            telemetry.addData("Upper", m.upperBlockCS.red() + "  " + m.upperBlockCS.green() + "   " + m.upperBlockCS.blue());
-//            telemetry.addData("Lower", m.lowerBlockCS.red() + "  " + m.lowerBlockCS.green() + "   " + m.lowerBlockCS.blue());
-//            telemetry.update();
-//        }
-
         // Process the VuMark
         mark = vHelper.getVuMark();
         telemetry.log().add("DETECTED COLUMN: " + mark);
@@ -76,6 +61,7 @@ public class TesseractAuto extends LinearOpMode {
         doJewel();
 
         navigateToColumn();
+        sleep(5000);
         depositBlock();
 
         m.lowerIntake();
@@ -85,9 +71,9 @@ public class TesseractAuto extends LinearOpMode {
             if(m.justPark) {
                 m.stowAlignment();
                 m.setDirectionVectorComponents(0, 1);
-                m.run(1500, 0.4f, 0.4f);
+                m.run(600, 0.4f, 0.4f);
             } else {
-                scoreNextColumn();
+                scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), BlockColors.GREY, BlockColors.GREY)[0]));
             }
         }
 
@@ -101,16 +87,11 @@ public class TesseractAuto extends LinearOpMode {
     void depositBlock() {
         m.deployAlignment(noahTheColumn(mark));
         m.homeToCryptoColumn();
-
         m.lift.setPower(1);
-        m.deployFlipper();
         sleep(1000);
-        m.stowFlipper();
-
         m.stowAlignment();
-
         m.setDirectionVectorComponents(0, -1);
-        m.run(800, 0.2f, 0.2f);
+        m.run(800, 0.1f, 0.1f);
     }
 
     private int getSideCoefficient(StartPosition pos) {
@@ -126,7 +107,6 @@ public class TesseractAuto extends LinearOpMode {
             } else if (gamepad1.b) {
                 startPos = StartPosition.BLUE_B;
                 m.js = m.jsL;
-                sideModifier = -1;
             } else if (gamepad1.x) {
                 startPos = StartPosition.RED_A;
                 m.js = m.jsR;
@@ -290,120 +270,56 @@ public class TesseractAuto extends LinearOpMode {
         return CryptoboxColumns.INVALID;
     }
 
-    private void scoreNextColumn() {
-        long toZero = 0;
-        long zeroToColumn = 0;
-/*
-        int[] columns = BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.getUpperBlockColor(), m.getLowerBlockColor());
-
-        if(m.getUpperBlockColor() == BlockColors.BROWN) {
-            telemetry.log().add("Upper: BROWN");
-        } else if (m.getUpperBlockColor() == BlockColors.GREY) {
-            telemetry.log().add("Upper: GREY");
-        }
-
-        if(m.getLowerBlockColor() == BlockColors.BROWN) {
-            telemetry.log().add("Lower: BROWN");
-        } else if (m.getLowerBlockColor() == BlockColors.GREY) {
-            telemetry.log().add("Lower: GREY");
-        }
-
-        telemetry.log().add("Column: ", columns[0] + ":   Reference: lcr -- " + CryptoboxColumns.LEFT + " " + CryptoboxColumns.MIDDLE + " " + CryptoboxColumns.RIGHT);
-        telemetry.update();
-
-        switch (mark) {
-            case LEFT:
-                toZero = (STRAFE_SINGLE_COLUMN_DISTANCE * 2);
-                break;
-            case CENTER:
-                toZero = STRAFE_SINGLE_COLUMN_DISTANCE;
-                break;
-            case RIGHT:
-                toZero = 0;
-                break;
-        }
-
-        switch (columns[0]) {
+    private RelicRecoveryVuMark unnoahTheColumn(int column){
+        switch (column) {
             case CryptoboxColumns.LEFT:
-                zeroToColumn = (STRAFE_SINGLE_COLUMN_DISTANCE * 2);
-                break;
+                return RelicRecoveryVuMark.LEFT;
             case CryptoboxColumns.MIDDLE:
-                zeroToColumn = STRAFE_SINGLE_COLUMN_DISTANCE;
-                break;
+                return RelicRecoveryVuMark.CENTER;
             case CryptoboxColumns.RIGHT:
-                zeroToColumn = 0;
-                break;
+                return RelicRecoveryVuMark.RIGHT;
         }
+        return RelicRecoveryVuMark.UNKNOWN;
+    }
 
-
-        long moveDistance = toZero - zeroToColumn;
-        int directionModifier = 1;
-        if(moveDistance < 0) {
-            moveDistance = -moveDistance;
-            directionModifier = -1;
-        }
-        telemetry.log().add("moveDistance:" + moveDistance + "Dmod: " + directionModifier);
-        telemetry.log().add("to run(): " +((moveDistance*directionModifier)+COLUMN_STRAFE_SEAT_OFFSET));
-        telemetry.update();
-
-        sleep(5000);
-        m.setDirectionVectorComponents(directionModifier, 0);
-        m.run((moveDistance*directionModifier)+COLUMN_STRAFE_SEAT_OFFSET, 0, 1);
-
-        m.deployAlignment(columns[0]);
-        m.homeToCryptoColumn();
-        m.stowAlignment();
-
-        if(columns[0] == columns[1]) {
-            // Deposit both blocks
-            m.lift.setPower(1);
-            sleep(2000);
-        } else {
-            // Deposit a single block
-            m.lift.setPower(1);
-            sleep(500);
-        }
-        m.lift.setPower(0);
-        */
-        long tDist = 0;
-        switch(mark) {
-            case LEFT:
-                m.setDirectionVectorComponents(1, 0);
-                tDist = 700;
-                break;
-            case CENTER:
-                m.setDirectionVectorComponents(-1, 0);
-                tDist = STRAFE_SINGLE_COLUMN_DISTANCE - 150;
-                break;
-            case RIGHT:
-                m.setDirectionVectorComponents(-1, 0);
-                tDist = STRAFE_SINGLE_COLUMN_DISTANCE + 300;
-                break;
-            case UNKNOWN:
-                m.setDirectionVectorComponents(-1, 0);
-                tDist = STRAFE_SINGLE_COLUMN_DISTANCE;
-                break;
-
-        }
-        m.run(tDist, 0, 1);
-        m.deployAlignment(CryptoboxColumns.LEFT);
-        m.homeToCryptoColumn();
-        m.lift.setPower(1);
-        sleep(700);
-        m.lift.setPower(0);
-
+    private void scoreNextColumn(RelicRecoveryVuMark startColumn, RelicRecoveryVuMark targetColumn) {
+        int start = numberizeColumn(startColumn);
+        int target = numberizeColumn(targetColumn);
+        shiftColumns(target - start);
+        depositBlock();
         m.setDirectionVectorComponents(0, -1);
-        m.run(1400, 0.2f, 0.2f);
+        m.run(1400, 0, 0.6f);
 
+        m.stowAlignment();
+    }
+
+    private void shiftColumns(int numberOfColumns) {
+        // Use the sign of numberOfColumns to determine direction to move
+        m.setDirectionVectorComponents(numberOfColumns/Math.abs(numberOfColumns), 0);
+
+        // Because move direction has already been set, the signage of the motion becomes irrelevant and would make for longer conditionals
+        int absoluteMotion = Math.abs(numberOfColumns);
+        if (absoluteMotion == 1) {
+            m.run(600, 1f, 1f);
+        } else if (absoluteMotion == 2) {
+            m.run(1400, 0f, 1f);
+        } // Else, either we do not need to move or no VuMark was seen... Score in the same column with no added motion.
+    }
+
+    private int numberizeColumn(RelicRecoveryVuMark column) {
+        switch(column) {
+            case LEFT: return 0;
+            case CENTER: return 1;
+            case RIGHT: return 2;
+        }
+        // Will only be reached if VuMark is UNKNOWN
+        return -9;
     }
 
     private void balanceToColumn(long columnOffset) {
-        if(startPos == StartPosition.RED_B) {
-            m.run(CENTER_MOVE_TIME + columnOffset - COLUMN_SEAT_OFFSET, 0, 1);
-        } else {
-            m.run(CENTER_MOVE_TIME + columnOffset + COLUMN_SEAT_OFFSET - 100, 0, 1);
-        }
+        m.run(columnOffset, 0, 1);
         telemetry.log().add("Finished running, starting turn");
+        sleep(500);
         m.setRotationTarget(90 * sideModifier);
         m.turnToTarget();
         m.lowerIntake();

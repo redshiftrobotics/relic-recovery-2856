@@ -18,9 +18,33 @@ public class AutoExperiments extends LinearOpMode {
         m.initializeWithIMU();
         waitForStart();
         m.setRotationTarget(0);
-        m.setDirectionVectorComponents(-1, 0);
+        m.setDirectionVectorComponents(1, 0);
         telemetry.addData("time", time);
         while(this.opModeIsActive()) {
+            if(gamepad1.left_bumper) {
+                m.setRotationTarget(-90);
+                m.turnToTarget();
+            }
+            if(gamepad1.right_bumper) {
+                m.setRotationTarget(90);
+                m.turnToTarget();
+            }
+            if(gamepad1.left_stick_x > 0.1) {
+                telemetry.addData("direction", "left");
+                m.setDirectionVectorComponents(-1, 0);
+            }
+            if(gamepad1.left_stick_x < -0.1) {
+                telemetry.addData("direction", "right");
+                m.setDirectionVectorComponents(1, 0);
+            }
+            if(gamepad1.left_stick_y > 0.1) {
+                telemetry.addData("direction", "forward");
+                m.setDirectionVectorComponents(0, 1);
+            }
+            if(gamepad1.right_stick_y < -0.1) {
+                telemetry.addData("direction", "backward");
+                m.setDirectionVectorComponents(0, -1);
+            }
             if(gamepad1.dpad_up) time+= 100;
             if(gamepad1.dpad_down) time-= 100;
             if(gamepad1.dpad_left) startSpeed-=0.1;
@@ -30,7 +54,7 @@ public class AutoExperiments extends LinearOpMode {
                 m.run(time, startSpeed, 1);
             }
             telemetry.addData("time", time);
-            telemetry.addData("time", startSpeed);
+            telemetry.addData("startSpeed", startSpeed);
             telemetry.update();
             sleep(100);
         }

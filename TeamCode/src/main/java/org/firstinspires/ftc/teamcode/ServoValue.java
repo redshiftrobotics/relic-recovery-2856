@@ -16,14 +16,13 @@ public class ServoValue {
     static float LEFT_COLLECT_DOWN = .95f;
     static float RIGHT_COLLECT_DOWN = 0.05f;
 
-
     static float LOWER_ALIGN_OUT = 1f;
     static float LOWER_ALIGN_IN = 0.35f;
-    static float TOP_ALIGN_IN = .1f;
-    static float TOP_ALIGN_OUT = 1f;
+    static float TOP_ALIGN_IN = 0f;
+    static float TOP_ALIGN_OUT = .93f;
 
     static float RELIC_ARM_STORAGE = .75f;
-    static float RELIC_ARM_OUT = .64f;
+    static float RELIC_ARM_OUT = .60f;
     static float RELIC_ARM_IN = .2f;
 
     static float RELIC_CLAW_GRAB = 0f;
