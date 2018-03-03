@@ -102,13 +102,13 @@ public class BlockPlacerTree {
     };
 
     private static final int[][] CASE_gbbg = {
-            { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT },  // Start LEFT
+            { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.MIDDLE },  // Start LEFT
             { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT  },  // Start MIDDLE
             { CryptoboxColumns.LEFT, CryptoboxColumns.LEFT, CryptoboxColumns.LEFT   }  // Start RIGHT
     };
 
     private static final int[][] CASE_gbbb = {
-            { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.MIDDLE },  // Start LEFT
+            { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.INVALID },  // Start LEFT
             { CryptoboxColumns.RIGHT, CryptoboxColumns.RIGHT, CryptoboxColumns.MIDDLE  },  // Start MIDDLE
             { CryptoboxColumns.LEFT, CryptoboxColumns.LEFT, CryptoboxColumns.MIDDLE   }  // Start RIGHT
     };
