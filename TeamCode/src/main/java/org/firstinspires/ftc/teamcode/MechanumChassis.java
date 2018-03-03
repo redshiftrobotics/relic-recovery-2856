@@ -72,6 +72,7 @@ public class MechanumChassis {
     ColorSensor upperBlockCS;
     DistanceSensor lowerBlock;
     ColorSensor lowerBlockCS;
+    DistanceSensor intakeBlock;
     Servo flipperLeft;
     Servo flipperRight;
 
@@ -93,7 +94,8 @@ public class MechanumChassis {
     DigitalChannel lowerFrontSwitch;
     DigitalChannel upperFrontSwitch;
 
-    int lastLowerBlockColor = -1;
+    int lowerBlockColor = -1;
+    int upperBlockColor = -1;
 
     // Useful constant
     public final int SERVO_DEPLOYMENT_TIME = 500;
@@ -111,15 +113,6 @@ public class MechanumChassis {
 
     // Not setting to 1 allows for headroom for motors to reach requested velocities.
     public final float powerConstant = 0.9f;
-
-    // Deprecated Teleop init... TODO: Convert TesseractTeleop to new init style
-    MechanumChassis(DcMotor m0, DcMotor m1, DcMotor m2, DcMotor m3) {
-        this.m0 = m0;
-        this.m1 = m1;
-        this.m2 = m2;
-        this.m3 = m3;
-        initMotors();
-    }
 
     // Teleop style instance
     MechanumChassis(HardwareMap h) {
@@ -186,6 +179,8 @@ public class MechanumChassis {
         lowerBlock = hardwareMap.get(DistanceSensor.class, "lowerBlock");
         lowerBlockCS = hardwareMap.get(ColorSensor.class, "lowerBlock");
 
+        intakeBlock = hardwareMap.get(DistanceSensor.class, "intakeBlock");
+
         sideSwitch = hardwareMap.get(DigitalChannel.class, "upperSide");
         upperFrontSwitch = hardwareMap.get(DigitalChannel.class, "upperFront");
         lowerFrontSwitch = hardwareMap.get(DigitalChannel.class, "frontSwitch");
@@ -200,8 +195,13 @@ public class MechanumChassis {
         m1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        m1.setDirection(DcMotor.Direction.REVERSE);
-        m2.setDirection(DcMotor.Direction.REVERSE);
+
+        // SETUP FOR 40s
+//        m1.setDirection(DcMotor.Direction.REVERSE);
+//        m2.setDirection(DcMotor.Direction.REVERSE);
+
+        m3.setDirection(DcMotor.Direction.REVERSE);
+        m0.setDirection(DcMotor.Direction.REVERSE);
     }
 
     private void stopMotors() {
@@ -276,10 +276,10 @@ public class MechanumChassis {
                 context.telemetry.update();
             }
 
-            m0.setPower(P / 20);
-            m1.setPower(-P / 20);
-            m2.setPower(-P / 20);
-            m3.setPower(P / 20);
+            m0.setPower(P / 40);
+            m1.setPower(-P / 40);
+            m2.setPower(-P / 40);
+            m3.setPower(P / 40);
         }
         stopMotors();
     }
@@ -310,44 +310,52 @@ public class MechanumChassis {
     public void encoderTurn(int direction, long turnTime) {
         long start = System.currentTimeMillis();
         while (start + turnTime > System.currentTimeMillis() && context.opModeIsActive()) {
-            m0.setPower(-0.25*direction);
-            m1.setPower(0.25*direction);
-            m2.setPower(0.25*direction);
-            m3.setPower(-0.25*direction);
+            m0.setPower(-0.125*direction);
+            m1.setPower(0.125*direction);
+            m2.setPower(0.125*direction);
+            m3.setPower(-0.125*direction);
         }
         stopMotors();
     }
 
     void safeIntakeAsync() {
-        context.telemetry.addData("upperColor, lowerColor", getUpperBlockColor() + ",  " + getLowerBlockColor());
-        context.telemetry.update();
         if(upperBlock != null && lowerBlock != null) {
-            if (!hasLowerBlock()) {
+            if (!hasIntakeBlock()) {
                 lift.setPower(0);
-                lCollect.setPower(0);
+                lCollect.setPower(.8);
                 rCollect.setPower(.8);
-            } else if (hasLowerBlock() && canLift()) {
+            } else if (hasIntakeBlock()) {
                 lift.setPower(1);
                 lCollect.setPower(.8);
                 rCollect.setPower(.8);
-            } else if (hasLowerBlock() && !canLift()) {
-                lift.setPower(0);
-                lCollect.setPower(0);
-                rCollect.setPower(0);
             } else {
                 lift.setPower(0);
                 lCollect.setPower(0);
                 rCollect.setPower(0);
             }
+
+            // If we have a block at the lower position, and we have not already had one there at some point...
+            if(hasLowerBlock() && upperBlockColor == -1) {
+                // Upper block will start out at lowerBlockCS, so we will register it's color there.
+                upperBlockColor = getCurrentBlockColor(lowerBlockCS);
+            } else if (hasLowerBlock() && upperBlockColor != -1) {
+                lowerBlockColor = getCurrentBlockColor(lowerBlockCS);
+            }
         }
     }
 
+    // Returns truthy if no block is at the very top of the scoring mechanism.
     boolean canLift() {
         return upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM));
     }
 
     boolean hasLowerBlock() {
         return !Double.isNaN(lowerBlock.getDistance(DistanceUnit.CM)) && !(lowerBlock.getDistance(DistanceUnit.CM) > 30);
+    }
+
+    // Returns truthy if there is a block in the intake.
+    boolean hasIntakeBlock() {
+        return !Double.isNaN(intakeBlock.getDistance(DistanceUnit.CM)) && !(intakeBlock.getDistance(DistanceUnit.CM) > 30);
     }
 
     void intakeUntilStaged() {
@@ -382,7 +390,7 @@ public class MechanumChassis {
                 lift.setPower(0);
             }
             elapsedTime = System.currentTimeMillis() - start;
-            P = getOffset(getRotation(), rotationTarget) / 30;
+            P = getOffset(getRotation(), rotationTarget) / 15;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
@@ -418,31 +426,24 @@ public class MechanumChassis {
     }
 
     void deployFlipper() {
-        flipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
-        flipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+        flipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
+        flipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
     }
 
-    int getUpperBlockColor() {
-        if((upperBlockCS.green() + upperBlockCS.blue() + upperBlockCS.red()) / 3 > 25) {
+    int getCurrentBlockColor(ColorSensor cs) {
+        // Todo: TUNE ME
+        if((cs.green() + cs.blue() + cs.red()) / 3 > 25) {
             return BlockColors.GREY;
         } else {
             return BlockColors.BROWN;
         }
-    }
-
-    private int getTemporaryLowerBlockColor() {
-        if((lowerBlockCS.green() + lowerBlockCS.blue() + lowerBlockCS.red()) / 3 > 20) { //25
-            return BlockColors.GREY;
-        } else {
-            return BlockColors.BROWN;
-        }
-    }
-
-    int getLowerBlockColor() {
-        return lastLowerBlockColor;
     }
 
     void homeToCryptoColumn() {
+        // Bump for physical align sensor
+        setDirectionVectorComponents(1, 0);
+        run(450, 0.4f, 1f);
+
         float P;
         Vector2D movementDirection = new Vector2D(0, 1);
         setDirectionVector(movementDirection);
@@ -451,14 +452,14 @@ public class MechanumChassis {
 
         while((lowerFrontSwitch.getState() && upperFrontSwitch.getState()) && context.opModeIsActive()) {
             P = getOffset(getRotation(), rotationTarget) / 30;
-            setMotorPowers(0.4f, P);
+            setMotorPowers(0.2f, P);
         }
 
         movementDirection = new Vector2D(0, -1);
         setDirectionVector(movementDirection);
         float oldTween = this.tweenTime;
         tweenTime = 0;
-        run(200, 0, 0.5f);
+        run(200, 0, 0.3f);
         tweenTime = oldTween;
 
         movementDirection = new Vector2D(-1, 0);
@@ -469,7 +470,7 @@ public class MechanumChassis {
 
         while(sideSwitch.getState() && context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
             P = getOffset(getRotation(), rotationTarget) / 20;
-            setMotorPowers(0.25f, P);
+            setMotorPowers(0.15f, P);
         }
 
         stopMotors();
