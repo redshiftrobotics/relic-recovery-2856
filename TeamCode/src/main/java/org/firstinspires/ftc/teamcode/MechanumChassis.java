@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Color;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -82,6 +84,9 @@ public class MechanumChassis {
     ColorSensor jsL;
     ColorSensor jsR;
     ColorSensor js;
+    DistanceSensor jsLD;
+    DistanceSensor jsRD;
+    DistanceSensor jsD;
 
     // Relic hardware
     Servo armServo;
@@ -143,6 +148,7 @@ public class MechanumChassis {
         raiseIntake();
 
         relic = hardwareMap.dcMotor.get("relic");
+        relic.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         lowerAlign = hardwareMap.servo.get("rAlignServo");
         lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
@@ -172,6 +178,9 @@ public class MechanumChassis {
         jsL = hardwareMap.colorSensor.get("jsLeft");
         jsR = hardwareMap.colorSensor.get("jsRight");
         js = jsR;
+        jsLD = hardwareMap.get(DistanceSensor.class, "jsLeft");
+        jsRD = hardwareMap.get(DistanceSensor.class, "jsRight");
+        jsD = jsRD;
 
         upperBlock = hardwareMap.get(DistanceSensor.class, "upperBlock");
         upperBlockCS = hardwareMap.get(ColorSensor.class, "upperBlock");
@@ -195,10 +204,6 @@ public class MechanumChassis {
         m1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         m3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        // SETUP FOR 40s
-//        m1.setDirection(DcMotor.Direction.REVERSE);
-//        m2.setDirection(DcMotor.Direction.REVERSE);
 
         m3.setDirection(DcMotor.Direction.REVERSE);
         m0.setDirection(DcMotor.Direction.REVERSE);
@@ -258,10 +263,20 @@ public class MechanumChassis {
     }
 
     public void turnToTarget() {
+        turnToTarget(false);
+    }
+
+    public void turnToTarget(boolean shouldCollect) {
         long start = System.currentTimeMillis();
         long turnTimeout = 3000;
         float P;
         while(context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
+
+            if(shouldCollect) {
+                safeIntakeAsync();
+            } else {
+                lift.setPower(0);
+            }
 
             P = getOffset(getRotation(), rotationTarget);
 
@@ -318,30 +333,56 @@ public class MechanumChassis {
         stopMotors();
     }
 
+
+    private TesseractTimer intakeStallTimer = new TesseractTimer(1);
+    private TesseractTimer shiftPastSensorTime = new TesseractTimer(1);
+    boolean collectionFinished = false;
+    private TesseractTimer glyphRotateTimeout = new TesseractTimer(1);
+    // Todo: Maybe reimplement canLift safety, probably unnecessary though.
     void safeIntakeAsync() {
-        if(upperBlock != null && lowerBlock != null) {
+        if(upperBlock != null && lowerBlock != null && canLift()) {
             if (!hasIntakeBlock()) {
-                lift.setPower(0);
+                context.telemetry.addData("Intake State: ", "No Block");
                 lCollect.setPower(.8);
                 rCollect.setPower(.8);
+                if(shiftPastSensorTime.hasReachedTimeout()) {
+                    lift.setPower(0);
+                } else {
+                    lift.setPower(1);
+                }
+                intakeStallTimer = new TesseractTimer(4000);
             } else if (hasIntakeBlock()) {
-                lift.setPower(1);
-                lCollect.setPower(.8);
-                rCollect.setPower(.8);
-            } else {
-                lift.setPower(0);
-                lCollect.setPower(0);
-                rCollect.setPower(0);
+                shiftPastSensorTime = new TesseractTimer(1000);
+                if (intakeStallTimer.hasReachedTimeout()) {
+                    glyphRotateTimeout = new TesseractTimer(1000);
+                    intakeStallTimer = new TesseractTimer(4000);
+                } else if (!glyphRotateTimeout.hasReachedTimeout()) {
+                    lCollect.setPower(-.8);
+                    rCollect.setPower(.8);
+                    lift.setPower(0);
+                } else {
+                    context.telemetry.addData("Intake State: ", "Has Block");
+                    lift.setPower(1);
+                    lCollect.setPower(.8);
+                    rCollect.setPower(.8);
+                }
             }
 
-            // If we have a block at the lower position, and we have not already had one there at some point...
-            if(hasLowerBlock() && upperBlockColor == -1) {
-                // Upper block will start out at lowerBlockCS, so we will register it's color there.
-                upperBlockColor = getCurrentBlockColor(lowerBlockCS);
-            } else if (hasLowerBlock() && upperBlockColor != -1) {
-                lowerBlockColor = getCurrentBlockColor(lowerBlockCS);
+            if(hasLowerBlock() && hasIntakeBlock()) {
+                collectionFinished = true;
             }
+
+            // Continue running until canLift() returns false (in the above while loop) after both blocks are collected.
+            if(collectionFinished) {
+                lift.setPower(1);
+            }
+        } else {
+            lift.setPower(0);
+            lCollect.setPower(0);
+            rCollect.setPower(0);
+            collectionFinished = true;
         }
+        context.telemetry.update();
     }
 
     // Returns truthy if no block is at the very top of the scoring mechanism.
@@ -350,29 +391,46 @@ public class MechanumChassis {
     }
 
     boolean hasLowerBlock() {
-        return !Double.isNaN(lowerBlock.getDistance(DistanceUnit.CM)) && !(lowerBlock.getDistance(DistanceUnit.CM) > 30);
+        return !Double.isNaN(lowerBlock.getDistance(DistanceUnit.CM)) && !(lowerBlock.getDistance(DistanceUnit.CM) > 10);
     }
 
     // Returns truthy if there is a block in the intake.
     boolean hasIntakeBlock() {
-        return !Double.isNaN(intakeBlock.getDistance(DistanceUnit.CM)) && !(intakeBlock.getDistance(DistanceUnit.CM) > 30);
+        return !Double.isNaN(intakeBlock.getDistance(DistanceUnit.CM)) && !(intakeBlock.getDistance(DistanceUnit.CM) > 50);
     }
 
+    // This method acts as cleanup for safeIntakeAsync. Basically if blocks are still not correctly staged in the scoring mech by the end
+    // of whatever motion safeIntakeAsync was being used in, then intakeUntilStaged will finish the job.
     void intakeUntilStaged() {
-        long start = System.currentTimeMillis();
-        long timeout = 4000;
-        while ((upperBlock.getDistance(DistanceUnit.CM) > 15 || Double.isNaN(upperBlock.getDistance(DistanceUnit.CM))) && context.opModeIsActive()) {
-            if (System.currentTimeMillis() > start+timeout) {
-                justPark = true;
-                break;
-            }
+        TesseractTimer t = new TesseractTimer(5000);
+        // This will clear the lowest block into from the intake and into the scoring mech.
+        while(canLift() && hasIntakeBlock() && context.opModeIsActive() && !t.hasReachedTimeout()) {
             lift.setPower(1);
             lCollect.setPower(.8);
             rCollect.setPower(.8);
         }
+        while(!hasLowerBlock() && context.opModeIsActive() && !t.hasReachedTimeout()) {
+            lift.setPower(-1);
+        }
+        // There is now guaranteed a block at lower block pos, the one we just cleared from the intake.
+        if(lowerBlockColor == -1) lowerBlockColor = getCurrentBlockColor(lowerBlockCS);
+        // Now move the upper block to a position where the top sensor can read it.
+        while (canLift() && context.opModeIsActive() && !t.hasReachedTimeout()) {
+            lift.setPower(1);
+            lCollect.setPower(.8);
+            rCollect.setPower(.8);
+        }
+
         lift.setPower(0);
         lCollect.setPower(0);
         rCollect.setPower(0);
+
+        upperBlockColor = getCurrentBlockColor(upperBlockCS);
+        context.telemetry.addData("upperBlockColor", upperBlockColor);
+        context.telemetry.update();
+        if(t.hasReachedTimeout()) {
+            justPark = true;
+        }
     }
 
     void run(long m, float s, float e) {
@@ -410,7 +468,7 @@ public class MechanumChassis {
 
     void stowTentacles() {
         lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
         context.sleep(SERVO_DEPLOYMENT_TIME);
     }
 
@@ -431,8 +489,9 @@ public class MechanumChassis {
     }
 
     int getCurrentBlockColor(ColorSensor cs) {
-        // Todo: TUNE ME
-        if((cs.green() + cs.blue() + cs.red()) / 3 > 25) {
+        context.telemetry.log().add("blockColorRatio", (float) cs.red() / (float) cs.blue());
+        context.telemetry.update();
+        if((float) cs.red() / (float) cs.blue() < 1.4) {
             return BlockColors.GREY;
         } else {
             return BlockColors.BROWN;
@@ -440,17 +499,28 @@ public class MechanumChassis {
     }
 
     void homeToCryptoColumn() {
-        // Bump for physical align sensor
-        setDirectionVectorComponents(1, 0);
-        run(450, 0.4f, 1f);
+        homeToCryptoColumn(30000);
+    }
 
+    void homeToCryptoColumn(long timeout) {
         float P;
         Vector2D movementDirection = new Vector2D(0, 1);
         setDirectionVector(movementDirection);
 
+        TesseractTimer to = new TesseractTimer(timeout);
+
         // DigitalChannel.getState() is false when pressed.
 
-        while((lowerFrontSwitch.getState() && upperFrontSwitch.getState()) && context.opModeIsActive()) {
+        while((lowerFrontSwitch.getState() && upperFrontSwitch.getState()) && context.opModeIsActive() && !to.hasReachedTimeout()) {
+
+            // If we came in pressed we want to undo that before going straight.
+            if(!sideSwitch.getState()) {
+                movementDirection = new Vector2D(1, 0);
+                setDirectionVector(movementDirection);
+            } else {
+                movementDirection = new Vector2D(0, 1);
+                setDirectionVector(movementDirection);
+            }
             P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(0.2f, P);
         }
@@ -473,6 +543,19 @@ public class MechanumChassis {
             setMotorPowers(0.15f, P);
         }
 
+        stopMotors();
+    }
+    void runToFront() {
+        float P;
+        Vector2D movementDirection = new Vector2D(0, 1);
+        setDirectionVector(movementDirection);
+
+        // DigitalChannel.getState() is false when pressed.
+
+        while(lowerFrontSwitch.getState() && context.opModeIsActive()) {
+            P = getOffset(getRotation(), rotationTarget) / 30;
+            setMotorPowers(0.4f, P);
+        }
         stopMotors();
     }
 

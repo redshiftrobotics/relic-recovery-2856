@@ -7,9 +7,9 @@ package org.firstinspires.ftc.teamcode;
 public class ServoValue {
     static float RIGHT_TENTACLE_UP = .17f;
     static float LEFT_TENTACLE_FOR_RELIC = .55f;
-    static float RIGHT_TENTACLE_DOWN = .9f;
+    static float RIGHT_TENTACLE_DOWN = .78f;
     static float LEFT_TENTACLE_UP = .65f;
-    static float LEFT_TENTACLE_DOWN = 0f;
+    static float LEFT_TENTACLE_DOWN = .07f;
 
     static float LEFT_COLLECT_UP = .4f;
     static float RIGHT_COLLECT_UP = .6f;
@@ -28,8 +28,8 @@ public class ServoValue {
     static float RELIC_CLAW_GRAB = 0f;
     static float RELIC_CLAW_RELEASE = .58f;
 
-    static float FLIPPER_RIGHT_UP = 0.8f;
-    static float FLIPPER_LEFT_UP = 0.1f;
+    static float FLIPPER_RIGHT_UP = 0.85f;
+    static float FLIPPER_LEFT_UP = 0.05f;
 
     static float FLIPPER_RIGHT_DOWN = 0.13f;
     static float FLIPPER_LEFT_DOWN = 0.77f;

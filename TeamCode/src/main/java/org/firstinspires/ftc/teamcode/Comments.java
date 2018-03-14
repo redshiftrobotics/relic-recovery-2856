@@ -7,14 +7,13 @@ import java.util.Random;
  */
 
 public class Comments {
-    Random r = new Random();
+    static Random r = new Random();
     private static String[] compliments = new String[]{
             "Wow, nice moves Mark!",
-            "Lookin' good with those classy black side-panels, Mark!",
-            ""
+            "Lookin' good with those classy black side-panels, Mark!"
     };
 
-//    public static String getRandomCompliment() {
-//        r.nextInt()
-//    }
+    public static String getRandomCompliment() {
+        return compliments[r.nextInt(compliments.length)];
+    }
 }

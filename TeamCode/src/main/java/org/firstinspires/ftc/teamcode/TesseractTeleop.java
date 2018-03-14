@@ -60,6 +60,8 @@ public class TesseractTeleop extends OpMode {
 
     @Override
     public void loop() {
+        telemetry.addData("filterJoystickOut", filterJoystick(gamepad1.right_stick_x));
+        telemetry.update();
         m.setDirectionVectorComponents(-filterJoystick(gamepad1.right_stick_x), filterJoystick(gamepad1.right_stick_y));
         driveTrainControl(gamepad1);
         liftControl(gamepad2);
@@ -76,6 +78,12 @@ public class TesseractTeleop extends OpMode {
             slowDown = true;
         } else {
             slowDown = false;
+        }
+
+        if(pad.dpad_left) {
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+        } else {
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
         }
     }
 
@@ -172,5 +180,12 @@ public class TesseractTeleop extends OpMode {
         armServoControl(pad);
         clawServoControl(pad);
         armExtensionControl(pad);
+        if(pad.dpad_left) {
+            m.topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
+        } else {
+            m.topAlign.setPosition(ServoValue.TOP_ALIGN_IN);
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
+        }
     }
 }

@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
@@ -21,9 +22,8 @@ public class TesseractAuto extends LinearOpMode {
     private static  long CENTER_OFFSET = 1650;
     private static long FAR_OFFSET = 1900;
 
-    private static long A_CENTER_OFFSET = 1300;
-    private static long A_NEAR_OFFSET = 400;
-    private static long A_FAR_OFFSET = 1750;
+    private static long A_CENTER_OFFSET = 1550;
+    private static long A_FAR_OFFSET = 1800;
 
     private VuforiaHelper vHelper;
 
@@ -31,7 +31,7 @@ public class TesseractAuto extends LinearOpMode {
     private int sideModifier = 1;
 
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() { // removed throws interrupt exception
         telemetry.addData("Hardware: ", "Initializing...");
         telemetry.addData("Vuforia: ", "Initializing...");
         telemetry.update();
@@ -57,41 +57,124 @@ public class TesseractAuto extends LinearOpMode {
         // Zero rotation target.
         m.setRotationTarget(0);
 
+        // Compliment Mark
+        telemetry.log().add(Comments.getRandomCompliment());
+        telemetry.update();
+
         // Kick the jewel off.
         doJewel();
 
         navigateToColumn();
-        sleep(5000);
-        depositBlock();
-
         m.lowerIntake();
+        depositBlock(noahTheColumn(mark), 600);
 
         if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
+            m.setDirectionVectorComponents(0, -1);
+            m.run(650, 0, 1);
             collectBlocks();
             if(m.justPark) {
                 m.stowAlignment();
                 m.setDirectionVectorComponents(0, 1);
                 m.run(600, 0.4f, 0.4f);
             } else {
-                scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), BlockColors.GREY, BlockColors.GREY)[0]));
+                scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor)[0]));
+            }
+        } else if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
+            aPositionCollection();
+            if(m.justPark) {
+                m.stowAlignment();
+            } else {
+                //scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor)[0]));
+                depositBlock(0, 2000);
             }
         }
 
         m.stowAlignment();
-        sleep(m.SERVO_DEPLOYMENT_TIME+500);
+        sleep(m.SERVO_DEPLOYMENT_TIME+700);
 
-        // TODO: Give Mark (Cark?) compliments of the chef
+        // Todo: Test autos that run at the outer bounds of 30 seconds
     }
 
 
-    void depositBlock() {
-        m.deployAlignment(noahTheColumn(mark));
-        m.homeToCryptoColumn();
+    // Non-directional, ensure setting direction beforehand
+    void cryptoToGlyphPitStrafe() {
+        long farToPit = 1350;
+        long middleToPit = 1600;
+        long nearToPit = 1900;
+        if (startPos == StartPosition.BLUE_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(nearToPit, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(middleToPit, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(farToPit, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(middleToPit, 0, 1);
+                    break;
+            }
+        } else if (startPos == StartPosition.RED_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(farToPit, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(middleToPit, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(nearToPit, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(middleToPit, 0, 1);
+                    break;
+            }
+        }
+    }
+
+    void aPositionCollection() {
+        m.setDirectionVectorComponents(0, -1);
+        m.run(450, 0.4f, 1);
+
+        m.setDirectionVectorComponents(-1*sideModifier, 0);
+
+        cryptoToGlyphPitStrafe();
+
+        m.setDirectionVectorComponents(0, -1);
+        m.run(900, 0, 1);
+
+        collectBlocks();
+
+        m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+        m.runToFront();
+        m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+
+        m.setDirectionVectorComponents(0, -1);
+        m.run(500, 0.4f, 1);
+
+        m.setDirectionVectorComponents(sideModifier, 0);
+
+        m.run(1350, 0, 1);
+
+        // Because sometimes the physical align hits when being deployed
+        m.setDirectionVectorComponents(0, -1);
+        m.run(200, 0.4f, 1);
+    }
+
+    void depositBlock(int col, long depositTime) {
+        // Bump for physical align sensor
+        m.setDirectionVectorComponents(1, 0);
+        m.run(450, 0.4f, 1f);
+
+        m.deployAlignment(col);
+        m.homeToCryptoColumn(6000);
         m.lift.setPower(1);
-        sleep(1000);
+        sleep(depositTime);
         m.stowAlignment();
         m.setDirectionVectorComponents(0, -1);
-        m.run(800, 0.1f, 0.1f);
+        m.run(900, 0.1f, 0.1f);
     }
 
     private int getSideCoefficient(StartPosition pos) {
@@ -104,15 +187,19 @@ public class TesseractAuto extends LinearOpMode {
             if(gamepad1.a) {
                 startPos = StartPosition.BLUE_A;
                 m.js = m.jsL;
+                m.jsD = m.jsLD;
             } else if (gamepad1.b) {
                 startPos = StartPosition.BLUE_B;
                 m.js = m.jsL;
+                m.jsD = m.jsLD;
             } else if (gamepad1.x) {
                 startPos = StartPosition.RED_A;
                 m.js = m.jsR;
+                m.jsD = m.jsRD;
             } else if (gamepad1.y) {
                 startPos = StartPosition.RED_B;
                 m.js = m.jsR;
+                m.jsD = m.jsRD;
             }
 
             sideModifier = getSideCoefficient(startPos);
@@ -137,18 +224,23 @@ public class TesseractAuto extends LinearOpMode {
 
     private void doJewel() {
         m.deployTentacles();
+        int colorThresh = 13;
 
         // Detect color and kick correct jewel. No need to side modify these!!!
-        if(m.js.red() > m.js.blue()) {
-            telemetry.log().add("JEWEL SENSOR SAW:::: RED");
+        telemetry.log().add("RED: " + m.js.red() + "   -   " + "BLUE: " + m.js.blue());
+        if(m.js.red() > m.js.blue() + colorThresh) {
             m.encoderTurn(-1, 700);
             m.stowTentacles();
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
             m.encoderTurn(1, 700);
+        } else if (m.js.red() + colorThresh < m.js.blue()) {
+            m.encoderTurn(1, 700);
+            m.stowTentacles();
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+            m.encoderTurn(-1, 700);
         } else {
-            telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
-            m.encoderTurn(1, 700);
             m.stowTentacles();
-            m.encoderTurn(-1, 700);
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
         }
 
         // Just to be safe, can probably be removed
@@ -159,7 +251,6 @@ public class TesseractAuto extends LinearOpMode {
         long unknownDefault = CENTER_OFFSET;
         long unknownADefault = A_CENTER_OFFSET;
 
-        telemetry.log().add("Executing on position B");
         m.setDirectionVectorComponents(0, 1);
 
         // B POSITION
@@ -198,20 +289,17 @@ public class TesseractAuto extends LinearOpMode {
 
         // A POSITION
         if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
-            m.run(1650, 0, 1);
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+            m.runToFront();
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+            m.setDirectionVectorComponents(0, -1);
+            m.run(300, 0.4f, 0.4f);
             m.setDirectionVectorComponents(-1*sideModifier, 0);
-        }
-
-        if(startPos == StartPosition.BLUE_A) {
-            A_NEAR_OFFSET += 400;
-            A_CENTER_OFFSET += 400;
-            A_FAR_OFFSET += 400;
         }
 
         if (startPos == StartPosition.BLUE_A) {
             switch (mark) {
                 case LEFT:
-                    m.run(A_NEAR_OFFSET, 0, 1);
                     break;
                 case CENTER:
                     m.run(A_CENTER_OFFSET, 0, 1);
@@ -232,7 +320,6 @@ public class TesseractAuto extends LinearOpMode {
                     m.run(A_CENTER_OFFSET, 0, 1);
                     break;
                 case RIGHT:
-                    m.run(A_NEAR_OFFSET, 0, 1);
                     break;
                 case UNKNOWN:
                     m.run(unknownADefault, 0, 1);
@@ -242,20 +329,38 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void collectBlocks() {
-        m.setDirectionVectorComponents(0, -1);
-        m.run(1200, 0, 1, true);
+        int counter = 0;
+        int agro;
 
-        m.setDirectionVectorComponents(0, -1);
-        m.run(1100, 0, 1, true);
+        if(startPos == StartPosition.RED_A || startPos == StartPosition.BLUE_A) {
+            agro = 2;
+        } else {
+            agro = 6;
+        }
+
+        while(!m.collectionFinished && opModeIsActive()) {
+            m.setDirectionVectorComponents(0, -1);
+            m.run(400, 0.4f, 1, true);
+            m.setDirectionVectorComponents(0, 1);
+            m.run(200, 0.4f, 1, true);
+            counter++;
+            if(counter > agro) {
+                break;
+            }
+        }
         m.setDirectionVectorComponents(0, 1);
-        m.run(650, 0, 1, true);
-
-        m.setDirectionVectorComponents(0, -1);
-        m.run(950, 0, 1, true);
-        m.setDirectionVectorComponents(0, 1);
-        m.run(650, 0, 1, true);
-
+        m.run(700, 0, 1, true);
+        m.lift.setPower(0);
+        m.lCollect.setPower(0);
+        m.rCollect.setPower(0);
+        telemetry.log().add("INTAKE UNTIL STAGED RUNNING");
+        telemetry.update();
         m.intakeUntilStaged();
+        telemetry.log().add("INTAKE UNTIL STAGED FINISHED");
+        telemetry.addData("lower", m.lowerBlockColor);
+        telemetry.addData("upper", m.upperBlockColor);
+        telemetry.update();
+
     }
 
     private int noahTheColumn(RelicRecoveryVuMark inputColumn){
@@ -267,7 +372,7 @@ public class TesseractAuto extends LinearOpMode {
             case RIGHT:
                 return CryptoboxColumns.RIGHT;
         }
-        return CryptoboxColumns.INVALID;
+        return CryptoboxColumns.MIDDLE;
     }
 
     private RelicRecoveryVuMark unnoahTheColumn(int column){
@@ -279,23 +384,32 @@ public class TesseractAuto extends LinearOpMode {
             case CryptoboxColumns.RIGHT:
                 return RelicRecoveryVuMark.RIGHT;
         }
-        return RelicRecoveryVuMark.UNKNOWN;
+        return RelicRecoveryVuMark.CENTER;
     }
 
     private void scoreNextColumn(RelicRecoveryVuMark startColumn, RelicRecoveryVuMark targetColumn) {
         int start = numberizeColumn(startColumn);
         int target = numberizeColumn(targetColumn);
         shiftColumns(target - start);
-        depositBlock();
+        int[] placement = BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor);
+        if (placement[0] != placement[1]) {
+            depositBlock(noahTheColumn(targetColumn), 600);
+        } else {
+            depositBlock(noahTheColumn(targetColumn), 2000);
+        }
         m.setDirectionVectorComponents(0, -1);
-        m.run(1400, 0, 0.6f);
+        m.run(600, 0, 0.6f);
 
         m.stowAlignment();
     }
 
     private void shiftColumns(int numberOfColumns) {
         // Use the sign of numberOfColumns to determine direction to move
-        m.setDirectionVectorComponents(numberOfColumns/Math.abs(numberOfColumns), 0);
+        if (Math.abs(numberOfColumns) > 0) {
+            m.setDirectionVectorComponents(numberOfColumns / Math.abs(numberOfColumns), 0);
+        } else {
+            m.setDirectionVectorComponents(1, 0);
+        }
 
         // Because move direction has already been set, the signage of the motion becomes irrelevant and would make for longer conditionals
         int absoluteMotion = Math.abs(numberOfColumns);
@@ -313,7 +427,7 @@ public class TesseractAuto extends LinearOpMode {
             case RIGHT: return 2;
         }
         // Will only be reached if VuMark is UNKNOWN
-        return -9;
+        return 1;
     }
 
     private void balanceToColumn(long columnOffset) {

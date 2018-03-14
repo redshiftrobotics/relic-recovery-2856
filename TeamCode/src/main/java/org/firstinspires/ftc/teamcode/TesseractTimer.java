@@ -17,4 +17,6 @@ public class TesseractTimer {
     {
         return this.timeout < System.currentTimeMillis();
     }
+
+    public long getMillisecondsRemaining() { return this.timeout - System.currentTimeMillis(); }
 }
