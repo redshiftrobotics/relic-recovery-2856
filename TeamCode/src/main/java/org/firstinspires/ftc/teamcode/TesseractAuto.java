@@ -19,7 +19,7 @@ public class TesseractAuto extends LinearOpMode {
     RelicRecoveryVuMark mark;
 
     private static long NEAR_OFFSET = 1500;
-    private static  long CENTER_OFFSET = 1650;
+    private static  long CENTER_OFFSET = 2050;
     private static long FAR_OFFSET = 1900;
 
     private static long A_CENTER_OFFSET = 1550;
@@ -70,7 +70,6 @@ public class TesseractAuto extends LinearOpMode {
 
         if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
             m.setDirectionVectorComponents(0, -1);
-            m.run(650, 0, 1);
             collectBlocks();
             if(m.justPark) {
                 m.stowAlignment();
@@ -91,8 +90,6 @@ public class TesseractAuto extends LinearOpMode {
 
         m.stowAlignment();
         sleep(m.SERVO_DEPLOYMENT_TIME+700);
-
-        // Todo: Test autos that run at the outer bounds of 30 seconds
     }
 
 
@@ -329,6 +326,10 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void collectBlocks() {
+        m.run(10000, 0.4f, 0.4f, true);
+        m.run(10000, 0.4f, 0.4f, true);
+
+        /*
         int counter = 0;
         int agro;
 
@@ -360,6 +361,7 @@ public class TesseractAuto extends LinearOpMode {
         telemetry.addData("lower", m.lowerBlockColor);
         telemetry.addData("upper", m.upperBlockColor);
         telemetry.update();
+        */
 
     }
 
@@ -431,7 +433,7 @@ public class TesseractAuto extends LinearOpMode {
     }
 
     private void balanceToColumn(long columnOffset) {
-        m.run(columnOffset, 0, 1);
+        m.run(columnOffset, 0, 0.7f);
         telemetry.log().add("Finished running, starting turn");
         sleep(500);
         m.setRotationTarget(90 * sideModifier);

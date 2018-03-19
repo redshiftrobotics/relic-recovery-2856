@@ -443,15 +443,27 @@ public class MechanumChassis {
         float elapsedTime;
         while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
             if(runBelting) {
-                safeIntakeAsync();
-            } else {
-                lift.setPower(0);
+                if(hasIntakeBlock()) {
+                    break;
+                } else {
+                    rCollect.setPower(1);
+                }
             }
             elapsedTime = System.currentTimeMillis() - start;
             P = getOffset(getRotation(), rotationTarget) / 15;
             setMotorPowers(calculateTweenCurve(millis, elapsedTime, startSpeed, endSpeed), P);
         }
         stopMotors();
+        if(runBelting) {
+            while ((hasIntakeBlock() || !hasLowerBlock()) && context.opModeIsActive()) {
+                lift.setPower(1);
+                lCollect.setPower(1);
+                rCollect.setPower(1);
+            }
+            lift.setPower(0);
+            lCollect.setPower(0);
+            rCollect.setPower(0);
+        }
     }
 
     void stowAlignment() {
@@ -577,17 +589,18 @@ public class MechanumChassis {
     }
 
     private double calculateTweenCurve(long millis, float elapsedTime, double startSpeed, double endSpeed) {
-        if (debugModeEnabled) {
-            context.telemetry.addData("run elapsedTime", elapsedTime);
-            context.telemetry.addData("run targetTime", millis);
-            context.telemetry.update();
-        }
+        double tmpReturn;
         if (elapsedTime <= tweenTime) {
-            return ((startSpeed - endSpeed)/2) * Math.cos((Math.PI*elapsedTime) / tweenTime) + (startSpeed + endSpeed) / 2;
+            tmpReturn = ((startSpeed - endSpeed)/2) * Math.cos((Math.PI*elapsedTime) / tweenTime) + (startSpeed + endSpeed) / 2;
+//            context.telemetry.log().add(String.valueOf(tmpReturn));
+            return tmpReturn;
         } else if (elapsedTime < millis - tweenTime) {
             return endSpeed;
         } else { // elapsedTime > millis - tweenTime
-            return ((endSpeed - startSpeed)/2) * Math.cos((Math.PI*(millis-tweenTime-elapsedTime)) / tweenTime) + (endSpeed + startSpeed) / 2;
+            tmpReturn = ((endSpeed - startSpeed)/2) * Math.cos((Math.PI*(millis-tweenTime-elapsedTime)) / tweenTime) + (endSpeed + startSpeed) / 2;
+            context.telemetry.log().add(String.valueOf(tmpReturn));
+            context.telemetry.update();
+            return tmpReturn;
         }
     }
 
