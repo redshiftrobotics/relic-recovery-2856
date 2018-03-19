@@ -26,6 +26,8 @@ public class TesseractAuto extends LinearOpMode {
     private static long A_FAR_OFFSET = 1800;
 
     private VuforiaHelper vHelper;
+    private JewelProcessor jp;
+    boolean lastLeftJewelIsRed;
 
     private StartPosition startPos = StartPosition.RED_B;
     private int sideModifier = 1;
@@ -53,6 +55,9 @@ public class TesseractAuto extends LinearOpMode {
         // Process the VuMark
         mark = vHelper.getVuMark();
         telemetry.log().add("DETECTED COLUMN: " + mark);
+
+        // Setup processor for jewel
+        jp = new JewelProcessor(vHelper);
 
         // Zero rotation target.
         m.setRotationTarget(0);
@@ -199,11 +204,13 @@ public class TesseractAuto extends LinearOpMode {
                 m.jsD = m.jsRD;
             }
 
+            lastLeftJewelIsRed = jp.isLeftJewelRed();
+
             sideModifier = getSideCoefficient(startPos);
 
             // Validate all sensors are operational.
             telemetry.addData("Starting Position: ", startPos);
-            telemetry.addData("Jewel Color Sensor: ", m.js.blue());
+            telemetry.addData("Jewel Color: ", lastLeftJewelIsRed ? "RED" : "BLUE");
             telemetry.addData("Scoring Sensors (upper, lower):",
                 m.upperBlock.getDistance(DistanceUnit.CM)
                 + " | " + m.upperBlockCS.blue()
@@ -221,23 +228,16 @@ public class TesseractAuto extends LinearOpMode {
 
     private void doJewel() {
         m.deployTentacles();
-        int colorThresh = 13;
-
-        // Detect color and kick correct jewel. No need to side modify these!!!
-        telemetry.log().add("RED: " + m.js.red() + "   -   " + "BLUE: " + m.js.blue());
-        if(m.js.red() > m.js.blue() + colorThresh) {
+        if (lastLeftJewelIsRed) {
             m.encoderTurn(-1, 700);
             m.stowTentacles();
             m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
             m.encoderTurn(1, 700);
-        } else if (m.js.red() + colorThresh < m.js.blue()) {
-            m.encoderTurn(1, 700);
-            m.stowTentacles();
-            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
-            m.encoderTurn(-1, 700);
         } else {
+            m.encoderTurn(1, 700);
             m.stowTentacles();
             m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+            m.encoderTurn(-1, 700);
         }
 
         // Just to be safe, can probably be removed
@@ -328,41 +328,6 @@ public class TesseractAuto extends LinearOpMode {
     private void collectBlocks() {
         m.run(10000, 0.4f, 0.4f, true);
         m.run(10000, 0.4f, 0.4f, true);
-
-        /*
-        int counter = 0;
-        int agro;
-
-        if(startPos == StartPosition.RED_A || startPos == StartPosition.BLUE_A) {
-            agro = 2;
-        } else {
-            agro = 6;
-        }
-
-        while(!m.collectionFinished && opModeIsActive()) {
-            m.setDirectionVectorComponents(0, -1);
-            m.run(400, 0.4f, 1, true);
-            m.setDirectionVectorComponents(0, 1);
-            m.run(200, 0.4f, 1, true);
-            counter++;
-            if(counter > agro) {
-                break;
-            }
-        }
-        m.setDirectionVectorComponents(0, 1);
-        m.run(700, 0, 1, true);
-        m.lift.setPower(0);
-        m.lCollect.setPower(0);
-        m.rCollect.setPower(0);
-        telemetry.log().add("INTAKE UNTIL STAGED RUNNING");
-        telemetry.update();
-        m.intakeUntilStaged();
-        telemetry.log().add("INTAKE UNTIL STAGED FINISHED");
-        telemetry.addData("lower", m.lowerBlockColor);
-        telemetry.addData("upper", m.upperBlockColor);
-        telemetry.update();
-        */
-
     }
 
     private int noahTheColumn(RelicRecoveryVuMark inputColumn){

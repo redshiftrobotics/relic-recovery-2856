@@ -59,9 +59,9 @@ public class VuforiaHelper {
         template.setName("relicVuMarkTemplate"); // Label for debugging, otherwise unnecessary.
     }
 
-    public Bitmap getCameraImage() throws InterruptedException {
+    public Bitmap getCameraImage() {
         // Poll will check asynchronously, but there should almost always be one there. take() would block until received.
-        frame = vuforia.getFrameQueue().take();
+        frame = vuforia.getFrameQueue().poll();
         long numImages = frame.getNumImages();
         for (int i = 0; i < numImages; i++) {
             if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {

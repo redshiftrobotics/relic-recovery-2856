@@ -18,7 +18,7 @@ public class JewelProcessor {
         this.v = v;
     }
 
-    boolean isLeftJewelRed() throws InterruptedException{
+    boolean isLeftJewelRed() {
         currentImage = v.getCameraImage();
         float[] average = new float[3];
         if (currentImage != null) {
