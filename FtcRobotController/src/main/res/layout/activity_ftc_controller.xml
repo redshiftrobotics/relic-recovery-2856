@@ -46,7 +46,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     android:id="@+id/top_bar"
     android:layout_width="fill_parent"
     android:layout_height="80dp"
-    android:background="@color/background_black">
+    android:background="#000">
 
     <ImageView
       android:id="@+id/robotIcon"
@@ -61,7 +61,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       android:layout_toEndOf="@id/robotIcon"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:textColor="?attr/textWhite"
+      android:textColor="#FFF"
       android:textAppearance="?android:attr/textAppearanceMedium"
       android:padding="8dp"
       android:textStyle="bold"/>
@@ -129,8 +129,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           android:id="@+id/cameraMonitorViewId"
           android:layout_width="match_parent"
           android:layout_height="match_parent"
-          android:orientation="vertical"
-          />
+          android:orientation="vertical">
+      </LinearLayout>
+
+      <LinearLayout
+          android:layout_marginTop="290dp"
+          android:layout_marginStart="40dp"
+          android:layout_width="45dp"
+          android:layout_height="80dp"
+          android:background="@drawable/jewel_indicator"/>
 
       <!-- When visible, the error message will overlay and thus partially
            obscure part of the camera monitor. We make this trade off so as to

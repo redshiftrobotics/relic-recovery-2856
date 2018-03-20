@@ -62,15 +62,17 @@ public class VuforiaHelper {
     public Bitmap getCameraImage() {
         // Poll will check asynchronously, but there should almost always be one there. take() would block until received.
         frame = vuforia.getFrameQueue().poll();
-        long numImages = frame.getNumImages();
-        for (int i = 0; i < numImages; i++) {
-            if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
-                Image rawBuffer = frame.getImage(i);
-                Bitmap bm = Bitmap.createBitmap(rawBuffer.getWidth(), rawBuffer.getHeight(), Bitmap.Config.RGB_565);
-                bm.copyPixelsFromBuffer(rawBuffer.getPixels());
+        if(frame != null) {
+            long numImages = frame.getNumImages();
+            for (int i = 0; i < numImages; i++) {
+                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+                    Image rawBuffer = frame.getImage(i);
+                    Bitmap bm = Bitmap.createBitmap(rawBuffer.getWidth(), rawBuffer.getHeight(), Bitmap.Config.RGB_565);
+                    bm.copyPixelsFromBuffer(rawBuffer.getPixels());
 //                saveImage(bm);
-                frame.close();
-                return bm;
+                    frame.close();
+                    return bm;
+                }
             }
         }
         return null;
@@ -96,17 +98,15 @@ public class VuforiaHelper {
     }
 
     private void drawDebugSquare(Bitmap bmp) {
-        int x = 200;
-        int y = 100;
         int lineWeight = 20;
-        for (int i = 0; i < x; i++) {
-            for (int j = 0; j < lineWeight; j++) {
-                bmp.setPixel(bmp.getWidth() - i -1, bmp.getHeight() - y - j, Color.rgb(0, 255, 0));
+        for (int i = 1; i < JewelProcessor.boxWidth; i++) {
+            for (int j = 1; j < lineWeight; j++) {
+                bmp.setPixel(bmp.getWidth() - i - JewelProcessor.boxRightOffset, bmp.getHeight() - JewelProcessor.boxHeight - j - JewelProcessor.boxBottomOffset, Color.rgb(0, 255, 0));
             }
         }
-        for (int i = 0; i < y; i++) {
-            for (int j = 0; j < lineWeight; j++) {
-                bmp.setPixel(bmp.getWidth() - x - j, bmp.getHeight() - i - 1, Color.rgb(0, 255, 0));
+        for (int i = 1; i < JewelProcessor.boxHeight; i++) {
+            for (int j = 1; j < lineWeight; j++) {
+                bmp.setPixel(bmp.getWidth() - JewelProcessor.boxWidth - j - JewelProcessor.boxRightOffset,  bmp.getHeight() - i  - JewelProcessor.boxBottomOffset, Color.rgb(0, 255, 0));
             }
         }
     }
