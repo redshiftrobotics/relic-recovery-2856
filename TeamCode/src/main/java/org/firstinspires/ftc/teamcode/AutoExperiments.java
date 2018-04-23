@@ -82,8 +82,8 @@ public class AutoExperiments extends LinearOpMode {
                 telemetry.log().add("running");
                 m.setTweenTime(adjustableThings[3]);
                 m.run((long) adjustableThings[0], adjustableThings[1], adjustableThings[2]);
-                m.setRotationTarget(90);
-                m.turnToTarget();
+//                m.setRotationTarget(90);
+//                m.turnToTarget();
             }
             telemetry.update();
             sleep(100);

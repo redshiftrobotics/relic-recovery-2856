@@ -23,12 +23,9 @@ public class ReadoutTest extends LinearOpMode {
         waitForStart();
         m.setRotationTarget(0);
         m.setDirectionVectorComponents(1, 0);
-        m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
-        m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_DOWN);
         float ration;
         while(opModeIsActive()) {
             ration = (float) m.lowerBlockCS.red() / (float) m.lowerBlockCS.blue();
-            telemetry.addData("Right JS (R, G, B, distance)", m.js.red() + " " + m.js.green() + " " + m.js.blue() + " " + m.jsD.getDistance(DistanceUnit.CM));
             telemetry.addData("THE RATIO", Float.toString(ration));
             telemetry.addData("upper RGB", getColorsRGB(m.upperBlockCS));
             telemetry.addData("upper Alpha", m.upperBlockCS.alpha());

@@ -20,10 +20,10 @@ public class ServoTester extends LinearOpMode {
 
 
         float increment = 0.1f;
-        float lv = 0f;
-        float rv = .8f;
-        Servo leftServo = hardwareMap.servo.get("lTentacle");
-        Servo rightServo = hardwareMap.servo.get("rTentacle");
+        float lv = .5f;
+        float rv = .5f;
+        Servo leftServo = hardwareMap.servo.get("lFlip");
+        Servo rightServo = hardwareMap.servo.get("rFlip");
         waitForStart();
 
         while(opModeIsActive()) {

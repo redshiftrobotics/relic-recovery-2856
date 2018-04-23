@@ -149,6 +149,7 @@ public class MechanumChassis {
 
         relic = hardwareMap.dcMotor.get("relic");
         relic.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        relic.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         lowerAlign = hardwareMap.servo.get("rAlignServo");
         lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
@@ -173,14 +174,6 @@ public class MechanumChassis {
         lTentacle = hardwareMap.servo.get("lTentacle");
         lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
         rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
-
-
-        jsL = hardwareMap.colorSensor.get("jsLeft");
-        jsR = hardwareMap.colorSensor.get("jsRight");
-        js = jsR;
-        jsLD = hardwareMap.get(DistanceSensor.class, "jsLeft");
-        jsRD = hardwareMap.get(DistanceSensor.class, "jsRight");
-        jsD = jsRD;
 
         upperBlock = hardwareMap.get(DistanceSensor.class, "upperBlock");
         upperBlockCS = hardwareMap.get(ColorSensor.class, "upperBlock");
@@ -455,27 +448,126 @@ public class MechanumChassis {
         }
         stopMotors();
         if(runBelting) {
-            while ((hasIntakeBlock() || !hasLowerBlock()) && context.opModeIsActive()) {
+            clearIntake();
+        }
+    }
+
+    // Curviness is in periods per second
+    float runAlongCurve(long millis, long startTime, float speed, float turnAmplitude, int curviness, boolean runBelting, int sideModifier, int startOffset) {
+        long start = System.currentTimeMillis() - startTime;
+        float P;
+        float elapsedTime = System.currentTimeMillis() - start;
+        float endTime = 0;
+        TesseractTimer goForABitLonger = new TesseractTimer(30000);
+
+        boolean intakeWasTriggered = false;
+        boolean nextBlock = false;
+
+        while (start + millis > System.currentTimeMillis() && context.opModeIsActive()) {
+
+            if(!nextBlock) {
+                if (!intakeWasTriggered) {
+                    if (!hasIntakeBlock()) {
+                        rCollect.setPower(1);
+                        if(startOffset == 0) {
+                            lCollect.setPower(1);
+                        }
+                    } else {
+                        intakeWasTriggered = true;
+                    }
+                } else {
+                    if (!hasLowerBlock()) {
+                        rCollect.setPower(1);
+                        lCollect.setPower(1);
+                        lift.setPower(1);
+                    } else {
+                        rCollect.setPower(0);
+                        lCollect.setPower(0);
+                        lift.setPower(0);
+                        nextBlock = true;
+                        goForABitLonger = new TesseractTimer(200);
+                        intakeWasTriggered = false;
+                    }
+                }
+            } else {
+                if(!goForABitLonger.hasReachedTimeout()) {
+                    rCollect.setPower(1);
+                    lCollect.setPower(1);
+                    lift.setPower(1);
+                } else {
+                    if (!intakeWasTriggered) {
+                        if (!hasIntakeBlock()) {
+                            rCollect.setPower(1);
+                            if(startOffset == 0) {
+                                lCollect.setPower(1);
+                            } else {
+                                lCollect.setPower(0);
+                            }
+                            lift.setPower(0);
+                        } else {
+                            intakeWasTriggered = true;
+                        }
+                    } else {
+                        if (hasIntakeBlock() && canLift()) {
+                            rCollect.setPower(1);
+                            lCollect.setPower(1);
+                            lift.setPower(1);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            elapsedTime = System.currentTimeMillis() - start;
+
+            setRotationTarget(
+                    (float)
+                    (turnAmplitude*Math.sin(((curviness*Math.PI) / 1000) * elapsedTime)) + (startOffset*sideModifier) // side modify
+            );
+
+            P = getOffset(getRotation(), rotationTarget) / 15;
+            setMotorPowers(speed, P);
+        }
+        stopMotors();
+        lift.setPower(0);
+        rCollect.setPower(0);
+        lCollect.setPower(0);
+        return endTime;
+    }
+
+    void clearIntake() {
+        TesseractTimer uptakeTimeout = new TesseractTimer(1000);
+        while ((hasIntakeBlock() || !hasLowerBlock()) && !uptakeTimeout.hasReachedTimeout() && canLift() && context.opModeIsActive()) {
+            lift.setPower(1);
+            lCollect.setPower(1);
+            rCollect.setPower(1);
+        }
+        TesseractTimer shiftFurtherTimeout = new TesseractTimer(400);
+        while (!shiftFurtherTimeout.hasReachedTimeout() && context.opModeIsActive()) {
+            if(canLift()) {
                 lift.setPower(1);
                 lCollect.setPower(1);
                 rCollect.setPower(1);
+            } else {
+                lift.setPower(0);
+                lCollect.setPower(0);
+                rCollect.setPower(0);
             }
-            lift.setPower(0);
-            lCollect.setPower(0);
-            rCollect.setPower(0);
         }
+        lift.setPower(0);
+        lCollect.setPower(0);
+        rCollect.setPower(0);
     }
 
     void stowAlignment() {
         lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
         topAlign.setPosition(ServoValue.TOP_ALIGN_IN);
-        context.sleep(SERVO_DEPLOYMENT_TIME);
     }
 
     void deployAlignment(int column) {
         topAlign.setPosition((column == CryptoboxColumns.RIGHT) ? ServoValue.TOP_ALIGN_OUT-0.14f : ServoValue.TOP_ALIGN_OUT);
         lowerAlign.setPosition((column == CryptoboxColumns.RIGHT) ? ServoValue.LOWER_ALIGN_OUT : ServoValue.LOWER_ALIGN_IN);
-        context.sleep(SERVO_DEPLOYMENT_TIME);
+//        context.sleep(SERVO_DEPLOYMENT_TIME);
     }
 
     void stowTentacles() {
@@ -534,14 +626,14 @@ public class MechanumChassis {
                 setDirectionVector(movementDirection);
             }
             P = getOffset(getRotation(), rotationTarget) / 30;
-            setMotorPowers(0.2f, P);
+            setMotorPowers(0.3f, P); //.2
         }
 
         movementDirection = new Vector2D(0, -1);
         setDirectionVector(movementDirection);
         float oldTween = this.tweenTime;
         tweenTime = 0;
-        run(200, 0, 0.3f);
+        run(300, 0, 0.3f);
         tweenTime = oldTween;
 
         movementDirection = new Vector2D(-1, 0);
@@ -552,7 +644,7 @@ public class MechanumChassis {
 
         while(sideSwitch.getState() && context.opModeIsActive() && start + turnTimeout > System.currentTimeMillis()) {
             P = getOffset(getRotation(), rotationTarget) / 20;
-            setMotorPowers(0.15f, P);
+            setMotorPowers(0.2f, P);
         }
 
         stopMotors();
@@ -564,7 +656,21 @@ public class MechanumChassis {
 
         // DigitalChannel.getState() is false when pressed.
 
-        while(lowerFrontSwitch.getState() && context.opModeIsActive()) {
+        while((lowerFrontSwitch.getState() && upperFrontSwitch.getState()) && context.opModeIsActive()) {
+            P = getOffset(getRotation(), rotationTarget) / 30;
+            setMotorPowers(0.4f, P);
+        }
+        stopMotors();
+    }
+
+    void runToSide() {
+        float P;
+        Vector2D movementDirection = new Vector2D(-1, 0);
+        setDirectionVector(movementDirection);
+
+        // DigitalChannel.getState() is false when pressed.
+
+        while(sideSwitch.getState() && context.opModeIsActive()) {
             P = getOffset(getRotation(), rotationTarget) / 30;
             setMotorPowers(0.4f, P);
         }
