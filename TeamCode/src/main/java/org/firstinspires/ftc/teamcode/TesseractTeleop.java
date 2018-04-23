@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.Servo;
 
 /**
  * Official Tesseract Teleop
@@ -40,29 +41,21 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 @TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
     private MechanumChassis m;
-    private DcMotor lift;
-    private DcMotor lCollect;
-    private DcMotor rCollect;
+    private Debouncer flipBounce;
+    private Debouncer slowBounce;
+    private Debouncer deScoreBounce;
+    boolean slowDown = false;
+    boolean deScoreMode = false;
     @Override
     public void init() {
-
-        // Initialize non-drivetrain motors.
-        lift = hardwareMap.dcMotor.get("lift");
-
-        lCollect = hardwareMap.dcMotor.get("lCollect");
-        rCollect = hardwareMap.dcMotor.get("rCollect");
-
-        hardwareMap.servo.get("lTentacle").setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
-        hardwareMap.servo.get("rTentacle").setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
-
         // Initialize drive-train with appropriate motors and OpMode context.
-        m = new MechanumChassis(
-            hardwareMap.dcMotor.get("m0"),
-            hardwareMap.dcMotor.get("m1"),
-            hardwareMap.dcMotor.get("m2"),
-            hardwareMap.dcMotor.get("m3"),
-            this
-        );
+        m = new MechanumChassis(hardwareMap);
+        m.initialize();
+        m.lowerIntake();
+
+        flipBounce = new Debouncer();
+        slowBounce = new Debouncer();
+        deScoreBounce = new Debouncer();
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -70,12 +63,33 @@ public class TesseractTeleop extends OpMode {
 
     @Override
     public void loop() {
-        Vector2D v = new Vector2D(-gamepad1.right_stick_x, gamepad1.right_stick_y);
-        m.setDirectionVector(v);
-        m.addJoystickRotation(gamepad1.left_stick_x);
-        m.setMotorPowers();
-        liftControl(gamepad1);
+        telemetry.addData("filterJoystickOut", filterJoystick(gamepad1.right_stick_x));
+        telemetry.update();
+        m.setDirectionVectorComponents(-filterJoystick(gamepad1.right_stick_x), filterJoystick(gamepad1.right_stick_y));
+        driveTrainControl(gamepad1);
         intakeControl(gamepad1);
+        scoreControl(gamepad1);
+        liftControl(gamepad2);
+        relicControl(gamepad2);
+
+        telemetry.addData("relic pos",  m.relic.getCurrentPosition());
+        telemetry.update();
+    }
+
+    private void driveTrainControl(Gamepad pad) {
+        m.addJoystickRotation(filterJoystick(pad.left_stick_x));
+        m.setMotorPowers();
+        if(slowBounce.debounce(pad.right_stick_button)) {
+            slowDown = true;
+        } else {
+            slowDown = false;
+        }
+
+//        if(pad.dpad_left) {
+//            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+//        } else {
+//            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+//        }
     }
 
     /***
@@ -83,25 +97,173 @@ public class TesseractTeleop extends OpMode {
      * @param pad The joystick to put assign this control to.
      */
     private void liftControl(Gamepad pad) {
-        if(pad.left_bumper) {
-            lift.setPower(1); // out
-        } else if (pad.left_trigger > 0.1) {
-            lift.setPower(-1); // in
+
+        // HACK TO GIVE TURNER FLIP
+        if(pad.dpad_down) {
+            m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_DOWN);
+            m.rCollectServo.setPosition(ServoValue.RIGHT_COLLECT_DOWN);
+        } else if (pad.dpad_up) {
+            m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_UP);
+            m.rCollectServo.setPosition(ServoValue.RIGHT_COLLECT_UP);
+        }
+
+        m.lift.setPower(pad.left_trigger);
+
+        if (pad.left_bumper) {
+            m.lift.setPower(-1);
+        }
+    }
+
+    private double filterJoystick(float val) {
+        float expoK = 0.4f;
+        double output = ((1 - expoK) * Math.pow(val, 3) + expoK * val);
+        if (slowDown) {
+            return output*0.7;
         } else {
-            lift.setPower(0);
+            return output;
+        }
+    }
+
+    private void singleDriverControls(Gamepad pad) {
+        if(deScoreMode) {
+            if(m.relic.getCurrentPosition() >= 4420) {
+                if(pad.right_trigger > 0.1) {
+                    m.relic.setPower(-pad.right_trigger);
+                } else {
+                    m.relic.setPower(0);
+                }
+            } else if(m.relic.getCurrentPosition() <= 0) {
+                if(pad.left_trigger > 0.1) {
+                    m.relic.setPower(pad.left_trigger);
+                } else {
+                    m.relic.setPower(0);
+                }
+            } else {
+                if(pad.left_trigger > 0.1) {
+                    m.relic.setPower(pad.left_trigger);
+                } else if (pad.right_trigger > 0.1) {
+                    m.relic.setPower(-pad.right_trigger);
+                } else {
+                    m.relic.setPower(0);
+                }
+            }
+
+            if (pad.right_trigger >= 0.1 || pad.left_trigger >= 0.1) {
+                m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
+            } else {
+                m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+            }
+
+            if(pad.right_trigger > 0.1) {
+                m.armServo.setPosition(ServoValue.RELIC_ARM_IN);
+            } else if (pad.left_trigger > 0.1) {
+//                m.armServo.setPosition(ServoValue.RELIC_ARM_OUT);
+            }
+
+
+            if(pad.left_bumper || pad.right_bumper) {
+                m.clawServo.setPosition((pad.left_bumper) ? ServoValue.RELIC_CLAW_RELEASE : ServoValue.RELIC_CLAW_GRAB);
+            }
         }
     }
 
     private void intakeControl(Gamepad pad) {
-        if(pad.right_trigger > 0.1) {
-            lCollect.setPower(0.8); // in
-            rCollect.setPower(-0.8);
-        } else if (pad.right_bumper) {
-            lCollect.setPower(-0.8); // out
-            rCollect.setPower(0.8);
+        deScoreMode = deScoreBounce.debounce(pad.a);
+
+        if(deScoreMode) {
+            if(pad.left_bumper || pad.left_trigger > 0.1) {
+                m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+            } else {
+                m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+            }
         } else {
-            lCollect.setPower(0);
-            rCollect.setPower(0);
+            if (pad.dpad_down) {
+                m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_DOWN);
+                m.rCollectServo.setPosition(ServoValue.RIGHT_COLLECT_DOWN);
+            } else if (pad.dpad_up) {
+                m.lCollectServo.setPosition(ServoValue.LEFT_COLLECT_UP);
+                m.rCollectServo.setPosition(ServoValue.RIGHT_COLLECT_UP);
+            }
+
+            if(gamepad2.right_trigger > 0.3) {
+                m.rCollect.setPower(gamepad2.right_trigger);
+                m.lCollect.setPower(gamepad2.right_trigger);
+            } else {
+                m.rCollect.setPower(pad.right_trigger);
+                m.lCollect.setPower(pad.left_trigger);
+            }
+
+            if (pad.left_bumper) {
+                m.rCollect.setPower(-0.8);
+                m.lCollect.setPower(-0.8); // out
+            }
+        }
+    }
+
+    // removed "staged" state
+    private void scoreControl(Gamepad pad) {
+        if (flipBounce.debounce(pad.right_bumper)) {
+            m.flipperRight.setPosition(ServoValue.FLIPPER_RIGHT_UP);
+            m.flipperLeft.setPosition(ServoValue.FLIPPER_LEFT_UP);
+        } else {
+            m.flipperRight.setPosition(ServoValue.FLIPPER_RIGHT_DOWN);
+            m.flipperLeft.setPosition(ServoValue.FLIPPER_LEFT_DOWN);
+        }
+    }
+
+
+    // Uses A (inc), B (dec)
+    private void armServoControl(Gamepad pad) {
+        if( pad.left_stick_button || pad.a ) {
+            m.armServo.setPosition( (pad.left_stick_button) ? ServoValue.RELIC_ARM_IN: ServoValue.RELIC_ARM_OUT );
+        }
+    }
+
+    // Uses X (inc), Y (dec)
+    private void clawServoControl(Gamepad pad) {
+        if(pad.x || pad.b ) {
+            m.clawServo.setPosition((pad.x) ? ServoValue.RELIC_CLAW_RELEASE : ServoValue.RELIC_CLAW_GRAB);
+        }
+    }
+
+    // Uses right joystick
+    private static final double CONTINUOUS_SERVO_JOYSTICK_THRESH = .05; // Needs to be calibrated (maybe)
+    private void armExtensionControl(Gamepad pad) {
+
+        if(m.relic.getCurrentPosition() >= 4420) {
+            if(-pad.right_stick_y < 0) {
+                m.relic.setPower(-pad.right_stick_y);
+            } else {
+                m.relic.setPower(0);
+            }
+        } else if(m.relic.getCurrentPosition() <= 0) {
+            if(-pad.right_stick_y > 0) {
+                m.relic.setPower(-pad.right_stick_y);
+            } else {
+                m.relic.setPower(0);
+            }
+        } else {
+            m.relic.setPower(-pad.right_stick_y);
+        }
+
+        if (Math.abs(pad.right_stick_y) >= 0.05) {
+            m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_FOR_RELIC);
+        } else {
+            m.lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
+        }
+
+    }
+
+    private void relicControl(Gamepad pad) {
+        armServoControl(pad);
+        clawServoControl(pad);
+        armExtensionControl(pad);
+        if(pad.dpad_left) {
+            m.topAlign.setPosition(ServoValue.TOP_ALIGN_OUT);
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
+        } else {
+            m.topAlign.setPosition(ServoValue.TOP_ALIGN_IN);
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
         }
     }
 }

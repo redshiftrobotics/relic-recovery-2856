@@ -1,257 +1,459 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.teamcode.blockplacer.BlockColors;
+import org.firstinspires.ftc.teamcode.blockplacer.BlockPlacerTree;
+import org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns;
 
 /**
  * Created by matt on 10/10/17.
  */
 @Autonomous(name = "LegitSauceAutoSauce")
 public class TesseractAuto extends LinearOpMode {
-    private DcMotor lift;
-    private Servo rTentacle;
-    private Servo lTentacle;
     private MechanumChassis m;
-    private Vector2D moveVec;
+    RelicRecoveryVuMark mark;
 
-    private ColorSensor jsL;
-    private ColorSensor jsR;
-    private ColorSensor js;
-    private boolean jsConnected = false;
+    private static long NEAR_OFFSET = 1750;
+    private static  long CENTER_OFFSET = 2050;
+    private static long FAR_OFFSET = 2350;
 
-    private static final int TWEEN_TIME = 700;
-    private static final int LIFT_DEPOSIT_TIME = 1000;
-    private static final int SERVO_DEPLOYMENT_TIME = 500;
-    private static final int HOME_HEADING = 0;
+    private static long A_CENTER_OFFSET = 1325;
+    private static long A_FAR_OFFSET = 1600;
 
     private VuforiaHelper vHelper;
+    private JewelProcessor jp;
+    boolean lastLeftJewelIsRed;
 
     private StartPosition startPos = StartPosition.RED_B;
     private int sideModifier = 1;
 
     @Override
-    public void runOpMode() throws InterruptedException {
-        initialize();
+    public void runOpMode() { // removed throws interrupt exception
+        telemetry.addData("Hardware: ", "Initializing...");
+        telemetry.addData("Vuforia: ", "Initializing...");
+        telemetry.update();
+
+        // Hardware.
+        m = new MechanumChassis(hardwareMap, this);
+        m.initializeWithIMU();
+        telemetry.addData("Hardware: ", "Initialized.");
+        telemetry.update();
+
+        // Vuforia.
+        vHelper = new VuforiaHelper(this);
+        telemetry.addData("Vuforia: ", "Initialized.");
+        telemetry.update();
+
+        // Setup processor for jewel
+        jp = new JewelProcessor(vHelper);
+
+        // Configuration.
         configurationLoop();
-        waitForStart();
 
         // Process the VuMark
-        RelicRecoveryVuMark mark = vHelper.getVuMark();
+        mark = vHelper.getVuMark();
         telemetry.log().add("DETECTED COLUMN: " + mark);
+
+        // Zero rotation target.
+        m.setRotationTarget(0);
+
+        // Compliment Mark
+        telemetry.log().add(Comments.getRandomCompliment());
+        telemetry.update();
 
         // Kick the jewel off.
         doJewel();
-        navigateToColumn(mark);
-        depositBlock();
-        safetyPush(); // to ensure block is in column
+
+        navigateToColumn();
+
+        m.lowerIntake();
+        depositBlock(noahTheColumn(mark), 700);
+
+
+        if (startPos == StartPosition.BLUE_B || startPos == StartPosition.RED_B) {
+
+            m.setDirectionVectorComponents(0, -1);
+            m.run(650, 0f, 0.7f);
+            m.lift.setPower(0);
+            m.rCollect.setPower(0);
+            m.lCollect.setPower(0);
+
+
+            m.run(1000, 0f, 1f);
+            collectBlocks();
+            if(m.justPark) {
+                m.stowAlignment();
+                m.setDirectionVectorComponents(0, 1);
+                m.run(600, 0.4f, 0.4f);
+            } else {
+                scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor)[0]));
+            }
+        } else if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
+            m.lift.setPower(0);
+            m.rCollect.setPower(0);
+            m.lCollect.setPower(0);
+            aPositionCollection();
+            if(m.justPark) {
+                m.stowAlignment();
+            } else {
+                //scoreNextColumn(mark, unnoahTheColumn(BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor)[0]));
+                specialDepositBlock();
+            }
+        }
     }
 
-    void initialize() {
-        // Initialize Vuforia
-        telemetry.log().add("Initializing Vuforia...");
-        vHelper = new VuforiaHelper(this);
-        telemetry.log().add("Done Initializing Vuforia");
+    void specialDepositBlock() {
+//        if(startPos == StartPosition.RED_A) {
+//            m.deployAlignment(0);
+//        } else {
+//            m.deployAlignment(2);
+//        }
+//        sleep(1000);
+//        m.runToFront();
 
-        // Get hardware devices
-        rTentacle = hardwareMap.servo.get("rTentacle");
-        lTentacle = hardwareMap.servo.get("lTentacle");
-        lift = hardwareMap.dcMotor.get("lift");
-        lift.setDirection(DcMotor.Direction.REVERSE);
+        m.runToSide();
 
-        // Initialize mechanum chassis.
-        m = new MechanumChassis(
-                hardwareMap.dcMotor.get("m0"),
-                hardwareMap.dcMotor.get("m1"),
-                hardwareMap.dcMotor.get("m2"),
-                hardwareMap.dcMotor.get("m3"),
-                hardwareMap.get(BNO055IMU.class, "imu"),
-                this
-        );
-        m.debugModeEnabled = true;
-        // Set global tween time.
-        m.setTweenTime(TWEEN_TIME);
-
-        // Strafe off motion setup.
-        moveVec = new Vector2D(-1*sideModifier, 0);
-        m.setDirectionVector(moveVec);
-
-        // Initialize servos up.
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP);
-        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP);
-
-        jsL = hardwareMap.colorSensor.get("jsLeft");
-        jsR = hardwareMap.colorSensor.get("jsRight");
-        js = jsR;
+        m.lift.setPower(1);
+        m.rCollect.setPower(1);
+        m.lCollect.setPower(1);
+        sleep(2000);
+        m.stowAlignment();
+        m.setDirectionVectorComponents(0, -1);
+        m.run(900, 0.1f, 0.1f);
+        m.lift.setPower(0);
+        m.rCollect.setPower(0);
+        m.lCollect.setPower(0);
     }
 
-    void depositBlock() {
-        lift.setPower(1);
-        sleep(LIFT_DEPOSIT_TIME);
-        lift.setPower(0);
+
+    // Non-directional, ensure setting direction beforehand
+    void cryptoToGlyphPitStrafe() {
+        long farToPit = 1350;
+        long middleToPit = 1600;
+        long nearToPit = 1900;
+        if (startPos == StartPosition.BLUE_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(nearToPit, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(middleToPit, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(farToPit, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(middleToPit, 0, 1);
+                    break;
+            }
+        } else if (startPos == StartPosition.RED_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(farToPit, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(middleToPit, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(nearToPit, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(middleToPit, 0, 1);
+                    break;
+            }
+        }
+    }
+
+    void aPositionCollection() {
+        m.setDirectionVectorComponents(0, -1);
+        m.run(450, 0.4f, 1);
+
+        m.setDirectionVectorComponents(-1*sideModifier, 0);
+
+        cryptoToGlyphPitStrafe();
+
+        m.setDirectionVectorComponents(0, -1);
+        m.run(1400, 0f, 1f);
+        collectBlocks();
+
+        if (startPos == StartPosition.BLUE_A) {
+            m.deployAlignment(2);
+            m.runToFront();
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+        } else {
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+            m.runToFront();
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+        }
+
+        m.setDirectionVectorComponents(0, -1);
+        m.run(300, 0f, 0.3f);
+
+        m.setDirectionVectorComponents(sideModifier, 0);
+        if(startPos == StartPosition.BLUE_A) {
+            m.run(1100, 0, 1);
+        } else {
+            m.run(1400, 0, 1);
+        }
+    }
+
+    void depositBlock(int col, long depositTime) {
+        m.deployAlignment(col);
+        sleep(400);
+
+        // Handle special case
+        if(!(startPos == StartPosition.RED_A && mark == RelicRecoveryVuMark.RIGHT)) {
+            // Bump for physical align sensor
+            m.setDirectionVectorComponents(1, 0);
+            m.run(450, 0.4f, 1f);
+        }
+        m.homeToCryptoColumn(6000);
+        m.lift.setPower(1);
+        m.rCollect.setPower(1);
+        m.lCollect.setPower(1);
+        sleep(depositTime);
+        m.stowAlignment();
     }
 
     private int getSideCoefficient(StartPosition pos) {
         return (pos == StartPosition.BLUE_A || pos == StartPosition.BLUE_B) ? -1 : 1;
     }
 
-    private void hardwareValidation() {
-        // Check for real values from the color sensor... This will catch and unplugged or misconfigured sensor.
-        if (js.red() != 255 && js.red() != 0 && js.blue() != 0 && js.red() != 255) {
-            jsConnected = true;
-        }
-    }
-
     private void configurationLoop() {
-        while(!isStarted()) {
+        while(!isStarted() && !isStopRequested()) {
             // Side and position configuration.
             if(gamepad1.a) {
                 startPos = StartPosition.BLUE_A;
-                js = jsL;
+                m.js = m.jsL;
+                m.jsD = m.jsLD;
             } else if (gamepad1.b) {
                 startPos = StartPosition.BLUE_B;
-                js = jsL;
-                sideModifier = -1;
+                m.js = m.jsL;
+                m.jsD = m.jsLD;
             } else if (gamepad1.x) {
                 startPos = StartPosition.RED_A;
-                js = jsR;
+                m.js = m.jsR;
+                m.jsD = m.jsRD;
             } else if (gamepad1.y) {
                 startPos = StartPosition.RED_B;
-                js = jsR;
+                m.js = m.jsR;
+                m.jsD = m.jsRD;
             }
+
+            lastLeftJewelIsRed = jp.isLeftJewelRed();
 
             sideModifier = getSideCoefficient(startPos);
 
-            hardwareValidation();
-
-            // Update the drive team.
+            // Validate all sensors are operational.
             telemetry.addData("Starting Position: ", startPos);
-            telemetry.addData("Jewel Color Sensor Connected ", jsConnected);
+            telemetry.addData("Jewel Color: ", lastLeftJewelIsRed ? "RED" : "BLUE");
+            telemetry.addData("Scoring Sensors (upper, lower):",
+                m.upperBlock.getDistance(DistanceUnit.CM)
+                + " | " + m.upperBlockCS.blue()
+                + " | " + m.lowerBlock.getDistance(DistanceUnit.CM)
+                + " | " + m.lowerBlockCS.blue()
+            );
+            telemetry.addData("Switches (side, topFront, lowerFront)",
+                m.sideSwitch.getState()
+                + " | " + m.upperFrontSwitch.getState()
+                + " | " + m.lowerFrontSwitch.getState()
+            );
             telemetry.update();
         }
     }
 
     private void doJewel() {
-
-        // Lower the tentacles.
-        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_DOWN);
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_DOWN);
-
-        sleep(SERVO_DEPLOYMENT_TIME);
-
-        // Detect color and kick correct jewel. No need to side modify these!!!
-        if(js.red() > js.blue()) {
-            telemetry.log().add("JEWEL SENSOR SAW:::: RED");
-            m.jewelKick(-1);
+        m.deployTentacles();
+        if (lastLeftJewelIsRed) {
+            m.encoderTurn(-1*sideModifier, 700);
+            m.stowTentacles();
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+            m.encoderTurn(1*sideModifier, 700);
         } else {
-            telemetry.log().add("JEWEL SENSOR SAW:::: BLUE");
-            m.jewelKick(1);
+            m.encoderTurn(1*sideModifier, 700);
+            m.stowTentacles();
+            m.rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
+            m.encoderTurn(-1*sideModifier, 700);
         }
-        // Tentacles should initialize slightly out for teleop to ensure unobstructed lift
-        lTentacle.setPosition(ServoValue.LEFT_TENTACLE_UP - .1);
-        rTentacle.setPosition(ServoValue.RIGHT_TENTACLE_UP + .1);
 
-        // Return to home heading after jewel kick.
-        m.setRotationTarget(HOME_HEADING);
-        m.turnToTarget();
-
-        telemetry.log().add("FINISHED RESETTING TO HOME ROTATION");
+        // Just to be safe, can probably be removed
+        m.setRotationTarget(0);
     }
 
-    private void navigateToColumn(RelicRecoveryVuMark mark) {
+    private void navigateToColumn() {
+        long unknownDefault = CENTER_OFFSET;
+        long unknownADefault = A_CENTER_OFFSET;
+
+        m.setDirectionVectorComponents(0, 1);
+
+        // B POSITION
+
+        if (startPos == StartPosition.BLUE_B) {
+            switch (mark) {
+                case LEFT:
+                    balanceToColumn(NEAR_OFFSET);
+                    break;
+                case CENTER:
+                    balanceToColumn(CENTER_OFFSET);
+                    break;
+                case RIGHT:
+                    balanceToColumn(FAR_OFFSET);
+                    break;
+                case UNKNOWN:
+                    balanceToColumn(unknownDefault);
+                    break;
+            }
+        } else if (startPos == StartPosition.RED_B) {
+            switch (mark) {
+                case LEFT:
+                    balanceToColumn(FAR_OFFSET);
+                    break;
+                case CENTER:
+                    balanceToColumn(CENTER_OFFSET);
+                    break;
+                case RIGHT:
+                    balanceToColumn(NEAR_OFFSET);
+                    break;
+                case UNKNOWN:
+                    balanceToColumn(unknownDefault);
+                    break;
+            }
+        }
+
+        // A POSITION
         if (startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
-            switch (mark) {
-                case LEFT:
-                    m.run(1900, 0, 1);
-                    break;
-                case CENTER:
-                    m.run(1500, 0, 1);
-                    break;
-                case RIGHT:
-                    m.setTweenTime(0);
-                    m.run(600, 0, 1);
-                    m.setTweenTime(TWEEN_TIME);
-                    break;
-            }
-        } else {
-            telemetry.log().add("Executing on position B");
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            switch (mark) {
-                case LEFT:
-                    if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
-                        telemetry.log().add("CASE RIGHT");
-                        m.run(1750, 0, 1);
-                        telemetry.log().add("Finished running, starting turn");
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                    } else {
-                        telemetry.log().add("CASE LEFT");
-                        m.run(2400, 0, 1);
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                        moveVec.SetComponents(-1 * sideModifier, 0);
-                        m.setDirectionVector(moveVec);
-                        m.setTweenTime(0);
-                        m.run(600, 0, 1);
-                        m.setTweenTime(TWEEN_TIME);
-                    }
-                    break;
-                case CENTER:
-                    telemetry.log().add("CASE CENTER");
-                    m.run(2400, 0, 1);
-                    telemetry.log().add("Finished running, starting turn");
-                    m.setRotationTarget(-90 * sideModifier);
-                    m.turnToTarget();
-                    break;
-                case RIGHT:
-                    if (startPos == StartPosition.BLUE_A || startPos == StartPosition.BLUE_B) {
-                        telemetry.log().add("CASE LEFT");
-                        m.run(2400, 0, 1);
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                        moveVec.SetComponents(-1 * sideModifier, 0);
-                        m.setDirectionVector(moveVec);
-                        m.setTweenTime(0);
-                        m.run(600, 0, 1);
-                        m.setTweenTime(TWEEN_TIME);
-                    } else {
-                        telemetry.log().add("CASE RIGHT");
-                        m.run(1750, 0, 1);
-                        telemetry.log().add("Finished running, starting turn");
-                        m.setRotationTarget(-90 * sideModifier);
-                        m.turnToTarget();
-                    }
-                    break;
-            }
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_OUT);
+            m.runToFront();
+            m.lowerAlign.setPosition(ServoValue.LOWER_ALIGN_IN);
+            m.setDirectionVectorComponents(0, -1);
+            m.run(600, 0.4f, 0.4f);
+            m.setDirectionVectorComponents(-1*sideModifier, 0);
         }
-        if(startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            m.run(2200, 0, 1);
-        } else {
-            m.setTweenTime(0);
-            moveVec.SetComponents(0, 1);
-            m.setDirectionVector(moveVec);
-            m.run(300, 0, 1);
-            m.setTweenTime(TWEEN_TIME);
+
+        if (startPos == StartPosition.BLUE_A) {
+            switch (mark) {
+                case LEFT:
+                    break;
+                case CENTER:
+                    m.run(A_CENTER_OFFSET, 0, 1);
+                    break;
+                case RIGHT:
+                    m.run(A_FAR_OFFSET, 0, 1);
+                    break;
+                case UNKNOWN:
+                    m.run(unknownADefault, 0, 1);
+                    break;
+            }
+        } else if (startPos == StartPosition.RED_A) {
+            switch (mark) {
+                case LEFT:
+                    m.run(A_FAR_OFFSET, 0, 1);
+                    break;
+                case CENTER:
+                    m.run(A_CENTER_OFFSET, 0, 1);
+                    break;
+                case RIGHT:
+                    break;
+                case UNKNOWN:
+                    m.run(unknownADefault, 0, 1);
+                    break;
+            }
         }
     }
 
-    private void safetyPush() {
-        m.run(1000, 0, 1);
-        moveVec.SetComponents(0, -1);
-        m.setDirectionVector(moveVec);
-        m.run(1000, 0, 1);
-        depositBlock();
-        moveVec.SetComponents(0, 1);
-        m.setDirectionVector(moveVec);
-        m.run(TWEEN_TIME, 0, 1);
+    private void collectBlocks() {
+        // last working well 15000, 0, 0.1f, 5f, 1
+        if(startPos == StartPosition.BLUE_A || startPos == StartPosition.RED_A) {
+            m.runAlongCurve(8000, 0, 0.1f, 5f, 1, true, sideModifier, 0);
+            m.setRotationTarget(0);
+        } else {
+            m.runAlongCurve(8000, 0, 0.1f, 5f, 1, true, sideModifier, 90);
+            m.setRotationTarget(90*sideModifier);
+        }
+//        m.turnToTarget();
+        m.setDirectionVectorComponents(0, 1);
+        m.run(1000, 0f, 1f);
+    }
+
+    private int noahTheColumn(RelicRecoveryVuMark inputColumn){
+        switch (inputColumn) {
+            case LEFT:
+                return CryptoboxColumns.LEFT;
+            case CENTER:
+                return CryptoboxColumns.MIDDLE;
+            case RIGHT:
+                return CryptoboxColumns.RIGHT;
+        }
+        return CryptoboxColumns.MIDDLE;
+    }
+
+    private RelicRecoveryVuMark unnoahTheColumn(int column){
+        switch (column) {
+            case CryptoboxColumns.LEFT:
+                return RelicRecoveryVuMark.LEFT;
+            case CryptoboxColumns.MIDDLE:
+                return RelicRecoveryVuMark.CENTER;
+            case CryptoboxColumns.RIGHT:
+                return RelicRecoveryVuMark.RIGHT;
+        }
+        return RelicRecoveryVuMark.CENTER;
+    }
+
+    private void scoreNextColumn(RelicRecoveryVuMark startColumn, RelicRecoveryVuMark targetColumn) {
+        int start = numberizeColumn(startColumn);
+        int target = numberizeColumn(targetColumn);
+        shiftColumns(target - start);
+        int[] placement = BlockPlacerTree.getBlockPlacement(noahTheColumn(mark), m.upperBlockColor, m.lowerBlockColor);
+//        if (placement[0] != placement[1]) {
+//            depositBlock(noahTheColumn(targetColumn), 600);
+//        } else {
+        depositBlock(noahTheColumn(targetColumn), 2000);
+//        }
+        m.setDirectionVectorComponents(0, -1);
+        m.run(600, 0, 0.6f);
+
+        m.stowAlignment();
+    }
+
+    private void shiftColumns(int numberOfColumns) {
+        // Use the sign of numberOfColumns to determine direction to move
+        if (Math.abs(numberOfColumns) > 0) {
+            m.setDirectionVectorComponents(numberOfColumns / Math.abs(numberOfColumns), 0);
+        } else {
+            m.setDirectionVectorComponents(1, 0);
+        }
+
+        // Because move direction has already been set, the signage of the motion becomes irrelevant and would make for longer conditionals
+        int absoluteMotion = Math.abs(numberOfColumns);
+        if (absoluteMotion == 1) {
+            m.run(600, 1f, 1f);
+        } else if (absoluteMotion == 2) {
+            m.run(1450, 0f, 1f); // 1400, 1370 for red 2
+        } // Else, either we do not need to move or no VuMark was seen... Score in the same column with no added motion.
+    }
+
+    private int numberizeColumn(RelicRecoveryVuMark column) {
+        switch(column) {
+            case LEFT: return 0;
+            case CENTER: return 1;
+            case RIGHT: return 2;
+        }
+        // Will only be reached if VuMark is UNKNOWN
+        return 1;
+    }
+
+    private void balanceToColumn(long columnOffset) {
+        m.run(columnOffset, 0, 0.7f);
+        telemetry.log().add("Finished running, starting turn");
+        sleep(500);
+        m.setRotationTarget(90 * sideModifier);
+        m.turnToTarget();
+        m.lowerIntake();
     }
 
     private enum StartPosition {

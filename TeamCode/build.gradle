@@ -13,3 +13,11 @@
 
 // Include common definitions from above.
 apply from: '../build.common.gradle'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+}

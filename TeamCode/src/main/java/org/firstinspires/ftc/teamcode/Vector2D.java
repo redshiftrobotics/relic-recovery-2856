@@ -43,7 +43,14 @@ public class Vector2D {
         m_nXComponent = nXComponent;
         m_nYComponent = nYComponent;
     }
-
+    public void SetXComponent( double nXComponent )
+    {
+        m_nXComponent = nXComponent;
+    }
+    public void SetYComponent( double nYComponent )
+    {
+        m_nYComponent = nYComponent;
+    }
     public void Add( Vector2D vDelta ) { this.AddComponents( vDelta.GetXComponent(), vDelta.GetYComponent() ); }
     public void AddPolar( double nMagnitude, double nDirection )
     {

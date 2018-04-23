@@ -35,32 +35,29 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
  * For consisten PID
  */
-@Disabled
-@Autonomous(name = "Mechanum Auto Test")
+
+@Autonomous(name = "Linear Actuator Test")
 public class MechanumTestAuto extends LinearOpMode {
-    MechanumChassis m;
     @Override
     public void runOpMode() throws InterruptedException {
-        m = new MechanumChassis(
-            hardwareMap.dcMotor.get("m0"),
-            hardwareMap.dcMotor.get("m1"),
-            hardwareMap.dcMotor.get("m2"),
-            hardwareMap.dcMotor.get("m3"),
-                hardwareMap.get(BNO055IMU.class, "imu"),
-            this
-        );
+        Servo l = hardwareMap.servo.get("lExtender");
+        Servo r = hardwareMap.servo.get("rExtender");
 
         telemetry.addData("Status", "Initialized");
         waitForStart();
-
-        Vector2D testVec = new Vector2D(-1, 0);
-        m.setDirectionVector(testVec);
-        m.run(5000, 0, 1);
+        l.setPosition(0.85);
+        r.setPosition(0.85);
+        Thread.sleep(7000);
+        l.setPosition(0.2);
+        r.setPosition(0.2);
+        Thread.sleep(7000);
+        l.setPosition(0);
     }
 
 }
