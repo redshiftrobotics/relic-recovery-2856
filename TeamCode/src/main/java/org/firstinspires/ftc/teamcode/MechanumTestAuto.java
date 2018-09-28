@@ -43,6 +43,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  */
 
 @Autonomous(name = "Linear Actuator Test")
+@Disabled
 public class MechanumTestAuto extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {

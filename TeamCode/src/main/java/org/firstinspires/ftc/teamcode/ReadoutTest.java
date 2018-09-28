@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.graphics.Color;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -13,6 +14,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * Created by matt on 2/13/18.
  */
 @Autonomous (name = "[T1] Sensor Readout")
+@Disabled
 public class ReadoutTest extends LinearOpMode {
     float[] hsv = new float[3];
     MechanumChassis m;

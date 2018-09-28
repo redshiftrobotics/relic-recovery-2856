@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.old2856;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by Duncan on 11/5/2016.
  */
-@TeleOp(name="2856 Stealth Teleop")
+@TeleOp(name="2856 Stealth Teleop (Velocity Vortex)")
+@Disabled
 public class StealthTeleop extends OpMode {
     public static int MAX_ENCODER_COUNT = 1680 * 16 / 9;
     DcMotor motors[] = new DcMotor[2];

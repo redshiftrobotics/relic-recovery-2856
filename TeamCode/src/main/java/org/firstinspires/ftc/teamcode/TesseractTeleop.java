@@ -38,7 +38,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 /**
  * Official Tesseract Teleop
  */
-@TeleOp(name = "xX_2856Teleop_Xx", group = "Tesseract")
+@TeleOp(name = "Tesseract TeleOp (Relic Recovery)", group = "Tesseract")
 public class TesseractTeleop extends OpMode {
     private MechanumChassis m;
     private Debouncer flipBounce;

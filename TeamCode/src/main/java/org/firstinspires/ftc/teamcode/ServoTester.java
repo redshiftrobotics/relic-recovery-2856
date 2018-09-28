@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.view.animation.LinearInterpolator;
 import android.widget.LinearLayout;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -12,7 +13,8 @@ import com.qualcomm.robotcore.hardware.Servo;
  * Created by matt on 10/28/17.
  */
 
-@TeleOp(name = "servotester")
+@TeleOp(name = "Servo Tester")
+@Disabled
 public class ServoTester extends LinearOpMode {
 
     @Override

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import java.util.Arrays;
@@ -9,6 +10,7 @@ import java.util.Arrays;
  * Created by matt on 2/13/18.
  */
 @Autonomous (name = "AutoTests")
+@Disabled
 public class AutoExperiments extends LinearOpMode {
     float[] adjustableThings = new float[4];
     public void adjustThing(int thingIndex, int direction) {

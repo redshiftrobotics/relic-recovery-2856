@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.graphics.Color;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
@@ -12,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * Created by matt on 2/13/18.
  */
 @Autonomous (name = "[T2] Intake Only")
+@Disabled
 public class IntakeOnlyTest extends LinearOpMode {
     MechanumChassis m;
     @Override

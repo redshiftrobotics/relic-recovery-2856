@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import java.util.Arrays;
@@ -9,6 +10,7 @@ import java.util.Arrays;
  * Created by matt on 2/13/18.
  */
 @Autonomous (name = "Curve Run Test")
+@Disabled
 public class InAndOutTest extends LinearOpMode {
     MechanumChassis m;
     @Override

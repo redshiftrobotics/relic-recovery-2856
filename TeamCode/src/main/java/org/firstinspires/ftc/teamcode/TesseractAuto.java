@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.blockplacer.CryptoboxColumns;
 /**
  * Created by matt on 10/10/17.
  */
-@Autonomous(name = "LegitSauceAutoSauce")
+@Autonomous(name = "Tesseract Auto (Relic Recovery)")
 public class TesseractAuto extends LinearOpMode {
     private MechanumChassis m;
     RelicRecoveryVuMark mark;
